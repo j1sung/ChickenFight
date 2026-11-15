@@ -190,7 +190,7 @@ UI는 C++ 위젯과 Widget Blueprint를 함께 사용합니다.
 flowchart LR
     Work["<b>작업 브랜치</b><br/>기능 개발 · 수정"]
     Test["<b>테스트 브랜치</b><br/>서버 연결<br/>멀티플레이 검증"]
-    Join[" "]
+    Join(( ))
     Dev["<b>dev</b><br/>통합 · 검증"]
     Main["<b>main</b><br/>버전 관리"]
 
@@ -201,7 +201,7 @@ flowchart LR
 
     style Work fill:#EAF2FF,stroke:#6195D6,color:#1F2937
     style Test fill:#FFF3DF,stroke:#D9A441,color:#1F2937
-    style Join width:1px,height:1px,padding:0px,font-size:0px,fill:#666,stroke:#666
+    style Join fill:#64748B,stroke:#64748B
     style Dev fill:#E7F5EC,stroke:#4F9B6C,color:#1F2937,stroke-width:2px
     style Main fill:#FFE8E2,stroke:#D97962,color:#1F2937,stroke-width:2px
 ```
