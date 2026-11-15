@@ -1,5 +1,10 @@
 ﻿# 변경 이력
 
+<a id="change-20261115-round3-draft-asset-move"></a>
+## 2026-11-15 · 사용 중인 Round3 Draft 에셋 경로 통합
+
+- Codex 수행 · 미커밋. 언리얼 에디터에서 `L_Round3`가 사용하는 BP 10개와 `M_R3_PreviewSky`를 `/Game/LD_Gym/LDProps/StaticMeshes/Round3/`로 이동하고 맵 참조를 갱신했다. 이전 경로의 리다이렉터와 미사용 Draft 에셋은 보존한다. 저장된 새 경로 참조 11개와 맵 295개 액터·정식 GameMode 로드를 확인했다. [편집 위치](Gameplay/Overview.md#round3-draft).
+
 <a id="change-20261113-round1-ring-boundary"></a>
 ## 2026-11-13 · Round1 로프 바깥 이탈 방지
 

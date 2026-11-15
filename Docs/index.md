@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-15 · 사용 중인 Round3 Draft 에셋 경로 통합](Changes.md#change-20261115-round3-draft-asset-move)
+
 - [2026-11-13 · Round1 로프 바깥 이탈 방지](Changes.md#change-20261113-round1-ring-boundary)
 
 - [2026-11-12 · EOS 세션 참가 콜백 수명 오류 수정](Changes.md#change-20261112-eos-session-callback)
