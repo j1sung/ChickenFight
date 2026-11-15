@@ -188,14 +188,22 @@ UI는 C++ 위젯과 Widget Blueprint를 함께 사용합니다.
 
 ```mermaid
 flowchart LR
-    Work["작업 브랜치<br/>기능 개발·수정"] -->|PR| Dev["dev<br/>통합·검증"]
-    Test["테스트 브랜치<br/>서버·멀티플레이 검증"] -->|PR| Dev
-    Dev -->|버전 통합 PR| Main["main<br/>버전 관리"]
+    Work["<b>작업 브랜치</b><br/>기능 개발 · 수정"]
+    Test["<b>테스트 브랜치</b><br/>서버 연결<br/>멀티플레이 검증"]
+    Join(( ))
+    Dev["<b>dev</b><br/>통합 · 검증"]
+    Main["<b>main</b><br/>버전 관리"]
+
+    Work --- Join
+    Test --- Join
+    Join -->|PR| Dev
+    Dev -->|버전 통합 PR| Main
 
     style Work fill:#EAF2FF,stroke:#6195D6,color:#1F2937
     style Test fill:#FFF3DF,stroke:#D9A441,color:#1F2937
-    style Dev fill:#E7F5EC,stroke:#4F9B6C,color:#1F2937
-    style Main fill:#FFE8E2,stroke:#D97962,color:#1F2937
+    style Join fill:#64748B,stroke:#64748B
+    style Dev fill:#E7F5EC,stroke:#4F9B6C,color:#1F2937,stroke-width:2px
+    style Main fill:#FFE8E2,stroke:#D97962,color:#1F2937,stroke-width:2px
 ```
 
 | 브랜치 | 용도 |
