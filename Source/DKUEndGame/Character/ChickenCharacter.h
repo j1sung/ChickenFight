@@ -35,6 +35,10 @@ public:
 
     bool IsChargingJump() const { return bIsCharging; }
     bool IsFallen() const { return bIsFallen; }
+    UFUNCTION(BlueprintPure, Category="Chicken|Balance")
+    float GetBalanceFailureAngleDegrees() const { return MaxBodyTilt * 35.f; }
+    UFUNCTION(BlueprintPure, Category="Chicken|Balance")
+    float GetBalanceDangerIntensity(float WarningAngleMargin = 10.f) const;
     bool IsRecoveringFromLanding() const { return bInLandingRecovery; }
     int32 GetTakeoffSerial() const { return TakeoffSerial; }
     float GetLandingRecoveryTime() const { return FMath::Max(0.01f, FMath::Max(LandingRecoveryTime, MinimumLandingRecoveryTime)); }
@@ -50,20 +54,24 @@ protected:
     virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 
 private:
+    UPROPERTY(VisibleAnywhere, Category="Chicken|Presentation")
+    TObjectPtr<class UCFPlayerPresentationComponent> PlayerPresentation;
     UPROPERTY(VisibleAnywhere, Category="Chicken|Audio")
     TObjectPtr<UChickenAudioComponent> ChickenAudio;
 
     UFUNCTION(NetMulticast, Unreliable)
     void MulticastPlaySound(EChickenSound Event, float Strength);
 
-    // Presentation follows authoritative balance without feeding back into failure checks.
+    // Server-smoothed pose is shared by rendering and the final balance-failure gate.
     UPROPERTY(EditAnywhere, Category="Chicken|Animation", meta=(ClampMin="0.1"))
     float VisualTiltResponse = 6.f;
 
     UPROPERTY(EditAnywhere, Category="Chicken|Animation", meta=(ClampMin="1", Units="deg/s"))
     float MaxVisualTiltSpeed = 100.f;
 
+    UPROPERTY(Replicated)
     FVector2D VisualBodyTilt = FVector2D::ZeroVector;
+    void UpdateBalanceFailure();
 
     // Also applies to existing Blueprints that still override LandingRecoveryTime to 0.2.
     UPROPERTY(EditAnywhere, Category="Movement|Hopping", meta=(ClampMin="0.01", Units="s"))
@@ -171,7 +179,7 @@ protected:
     float MinJumpPower = 100.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
-    float MaxJumpPower = 400.0f;
+    float MaxJumpPower = 500.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
     float ChargeRate = 700.0f;
@@ -203,9 +211,38 @@ protected:
     UPROPERTY(Replicated, BlueprintReadOnly, Category="Chicken|Knockdown")
     bool bKnockdownPending = false;
 
+    // Held intent on the owner and server (via RPC), retained through airborne movement.
 	bool bLocalChargeHeld = false;
 
+    // Server-owned attack bonus, spent on the first accepted contact or landing.
+    float AirborneAttackCharge = 0.f;
+    FVector AirborneAttackDirection = FVector::ZeroVector;
+    float GetChargedCollisionBonus(const FVector& TowardOther) const;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
+    float MaxChargedCollisionBonus = 400.f;
+
+    // Separate multiplier also applies to existing Blueprint jump-power overrides.
+    UPROPERTY(EditDefaultsOnly, Category="Jump", meta=(ClampMin="1.0"))
+    float ChargedJumpVerticalScale = 1.15f;
+
     void ApplyCollisionResponse(const FVector& VelocityChange);
+    void UpdateCollisionTilt();
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.3", ClampMax="0.5", Units="s"))
+    float CollisionTiltDelay = 0.4f;
+
+    struct FPendingCollisionTilt
+    {
+        double ApplyTime;
+        FVector WorldKick;
+    };
+    TArray<FPendingCollisionTilt> PendingCollisionTilts;
+
+    // World-space direction survives turning during the reaction delay.
+    UPROPERTY(Replicated)
+    FVector CollisionUpperBodyTilt = FVector::ZeroVector;
+    double CollisionUpperBodyEndTime = 0.0;
     TMap<TWeakObjectPtr<AChickenCharacter>, double> RecentCollisionTimes;
 
     UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.01", Units="s"))

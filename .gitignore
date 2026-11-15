@@ -101,3 +101,8 @@ Backend-Infra/backend/.env*
 # =========================================================
 
 *_BuiltData.uasset
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/

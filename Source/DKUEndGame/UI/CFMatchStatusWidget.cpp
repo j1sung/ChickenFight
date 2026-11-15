@@ -1,7 +1,9 @@
 #include "UI/CFMatchStatusWidget.h"
 #include "Network/CFWaitingNetwork.h"
 #include "Network/CFSessionSubsystem.h"
+#include "Network/CFMatchSessionSubsystem.h"
 #include "Blueprint/WidgetTree.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
@@ -84,14 +86,40 @@ void UCFMatchStatusWidget::NativeOnInitialized()
     Content->AddChildToVerticalBox(ReturnSize)->SetPadding(FMargin(0,20,0,0));
     ReturnButton->OnClicked.AddUniqueDynamic(this,&ThisClass::ReturnToWaiting);
 
+    MenuPanel=WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(),TEXT("MatchMenuPanel"));
+    MenuPanel->SetBrush(FSlateRoundedBoxBrush(FLinearColor(.025f,.035f,.045f,.88f),16.f));
+    MenuPanel->SetPadding(FMargin(16));
+    auto* MenuSlot=Canvas->AddChildToCanvas(MenuPanel); MenuSlot->SetAnchors(FAnchors(1,0));
+    MenuSlot->SetAlignment(FVector2D(1,0)); MenuSlot->SetPosition(FVector2D(-24,64)); MenuSlot->SetAutoSize(true);
     LeaveButton=WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(),TEXT("LeaveButton"));
-    auto* Label=WidgetTree->ConstructWidget<UTextBlock>(); Label->SetText(FText::FromString(TEXT("방 나가기"))); LeaveButton->SetContent(Label);
-    auto* CanvasSlot=Canvas->AddChildToCanvas(LeaveButton); CanvasSlot->SetAnchors(FAnchors(1,0)); CanvasSlot->SetAlignment(FVector2D(1,0)); CanvasSlot->SetPosition(FVector2D(-24,64)); CanvasSlot->SetSize(FVector2D(140,44));
+    FButtonStyle LeaveStyle=LeaveButton->GetStyle();
+    LeaveStyle.SetNormal(FSlateRoundedBoxBrush(FLinearColor(.65f,.19f,.10f,.95f),12.f))
+        .SetHovered(FSlateRoundedBoxBrush(FLinearColor(.78f,.25f,.14f,1.f),12.f))
+        .SetPressed(FSlateRoundedBoxBrush(FLinearColor(.46f,.12f,.06f,1.f),12.f))
+        .SetNormalPadding(FMargin(16,10)).SetPressedPadding(FMargin(16,10));
+    LeaveButton->SetStyle(LeaveStyle);
+    auto* Label=MakeText(TEXT("LeaveLabel"),20); Label->SetText(FText::FromString(TEXT("방 나가기")));
+    Label->SetShadowOffset(FVector2D::ZeroVector); LeaveButton->SetContent(Label);
+    auto* LeaveSize=WidgetTree->ConstructWidget<USizeBox>(); LeaveSize->SetWidthOverride(220); LeaveSize->SetHeightOverride(56);
+    LeaveSize->SetContent(LeaveButton); MenuPanel->SetContent(LeaveSize);
+    MenuPanel->SetVisibility(ESlateVisibility::Collapsed);
     LeaveButton->OnClicked.AddUniqueDynamic(this,&ThisClass::LeaveRoom);
+    PreparationPanel = WidgetTree->ConstructWidget<UBorder>();
+    PreparationPanel->SetBrushColor(FLinearColor(.02f, .025f, .035f, 1));
+    PreparationPanel->SetHorizontalAlignment(HAlign_Center); PreparationPanel->SetVerticalAlignment(VAlign_Center);
+    auto* PreparationText = MakeText(TEXT("PreparationText"), 28);
+    PreparationText->SetText(FText::FromString(TEXT("경기 접속 준비 중\n플레이어 네 명의 준비를 확인하고 있습니다…")));
+    PreparationPanel->SetContent(PreparationText);
+    auto* PreparationSlot = Canvas->AddChildToCanvas(PreparationPanel);
+    PreparationSlot->SetAnchors(FAnchors(0, 0, 1, 1)); PreparationSlot->SetOffsets(FMargin(0)); PreparationSlot->SetZOrder(100);
+    PreparationPanel->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOpen,bool bEliminated)
 {
+    const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+    const bool bAutomatic = State->bAutomaticMatch || (Bridge && Bridge->IsActive());
+    PreparationPanel->SetVisibility(bAutomatic && State->Phase == ECFMatchPhase::Waiting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
     RoundText->SetText(FText::FromString(FString::Printf(TEXT("ROUND %d / %d   ·   생존 %d / %d"),State->CurrentRound,State->TotalRounds,State->AlivePlayers.Num(),State->Participants.Num())));
     const bool bCountdown=State->Phase==ECFMatchPhase::Countdown;
     CountdownText->SetVisibility(bCountdown ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
@@ -126,9 +154,12 @@ void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOp
         else
         {
             const auto& Row=State->Scoreboard[I];
-            const bool bTied=Row.Rank>0 && State->Scoreboard.ContainsByPredicate([&Row](const FCFPlayerRoundScore& R) { return R.PlayerId!=Row.PlayerId && R.Rank==Row.Rank; });
-            Rank=Row.bForfeited ? TEXT("기권") : Row.Rank>0 ? (bTied ? FString::Printf(TEXT("공동 %d"),Row.Rank) : FString::FromInt(Row.Rank)) : TEXT("—");
-            Name=Row.PlayerName; Total=Row.TotalScore; bConnected=Row.bConnected;
+            // Row.Rank는 이번 라운드 점수 계산용이므로 보존하고 표시 순위만 누적으로 계산한다.
+            int32 TotalRank=1;
+            for (const auto& Other:State->Scoreboard) if (Other.TotalScore>Row.TotalScore) ++TotalRank;
+            const bool bTied=State->Scoreboard.ContainsByPredicate([&Row](const FCFPlayerRoundScore& R) { return R.PlayerId!=Row.PlayerId && R.TotalScore==Row.TotalScore; });
+            Rank=bTied ? FString::Printf(TEXT("공동 %d"),TotalRank) : FString::FromInt(TotalRank);
+            Name=Row.PlayerName+(Row.bForfeited ? TEXT(" (기권)") : TEXT("")); Total=Row.TotalScore; bConnected=Row.bConnected;
             Points=FString::Printf(TEXT("+%d"),Row.RoundScore);
         }
         RankTexts[I]->SetText(FText::FromString(Rank));
@@ -156,8 +187,14 @@ void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOp
     RoundProgressText->SetText(FText::FromString(Progress));
     WidgetTree->FindWidget(TEXT("ReturnSize"))->SetVisibility(bFinal && bHost ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
     ReturnButton->SetVisibility(bFinal && bHost ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-    ReturnButton->SetIsEnabled(bFinal && bHost && !State->bRoomClosing);
+    ReturnButton->SetIsEnabled(bFinal && bHost && !State->bRoomClosing && !State->bAutomaticMatch);
+    if (State->bAutomaticMatch)
+    {
+        ReturnButton->SetVisibility(ESlateVisibility::Collapsed);
+        WidgetTree->FindWidget(TEXT("ReturnSize"))->SetVisibility(ESlateVisibility::Collapsed);
+    }
     SpectatorText->SetVisibility(bEliminated && !bFinal ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+    MenuPanel->SetVisibility(bMenuOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
     LeaveButton->SetVisibility(bMenuOpen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 

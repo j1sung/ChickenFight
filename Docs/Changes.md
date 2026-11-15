@@ -1,4 +1,327 @@
-# 변경 이력
+﻿# 변경 이력
+
+<a id="change-20261115-round3-draft-asset-move"></a>
+## 2026-11-15 · 사용 중인 Round3 Draft 에셋 경로 통합
+
+- Codex 수행 · 미커밋. 언리얼 에디터에서 `L_Round3`가 사용하는 BP 10개와 `M_R3_PreviewSky`를 `/Game/LD_Gym/LDProps/StaticMeshes/Round3/`로 이동하고 맵 참조를 갱신했다. 이전 경로의 리다이렉터와 미사용 Draft 에셋은 보존한다. 저장된 새 경로 참조 11개와 맵 295개 액터·정식 GameMode 로드를 확인했다. [편집 위치](Gameplay/Overview.md#round3-draft).
+
+<a id="change-20261113-round1-ring-boundary"></a>
+## 2026-11-13 · Round1 로프 바깥 이탈 방지
+
+- Codex 수행 · 미커밋. `Ring_Rope`와 `Cube35` 테두리 사이에 플레이어만 막는 사각 Blocking Volume 4개를 추가했다. 카메라는 통과하며 기존 링·플레이어 시작 위치는 보존했다. [배치·높이·편집 위치](Gameplay/Overview.md#round1-sparring-ring).
+
+<a id="change-20261112-eos-session-callback"></a>
+## 2026-11-12 · EOS 세션 참가 콜백 수명 오류 수정
+
+- Codex 수행 · 미커밋. 검색 완료 바인딩 해제 후 람다 캡처를 읽던 코드를 수정했다. [Network](Network/Overview.md#eos-round1) · [세션 처리 순서](Network/EOSRound1Session.md#소유권과-순서).
+
+<a id="change-20261112-initial-connect-timeout"></a>
+## 2026-11-12 · 초기 호스트 접속 제한을 60초로 확대
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 원격 dev `074fb3c`에서 새 작업 브랜치를 만들어 `IpNetDriver.InitialConnectTimeout`을 15초에서 60초로 변경했다. 연결 후 끊김 판정과 서버 매칭 단계 기한은 유지한다.
+- 확인: EOS 설정 상속·EOSLocal 덮어쓰기 부재·변경 범위를 정적으로 확인했다. 새 빌드·실제 접속 재시험은 미실행이다. [Network](Network/Overview.md#eos-round1), [검사 방법과 기한 구분](Network/EOSRound1Session.md#각-테스트-pc-준비).
+
+<a id="change-20261112-round4-match-spawns"></a>
+## 2026-11-12 · Round4 놀이동산의 4인 경기 시작 위치 연결
+
+- Codex 수행 · 미커밋. `L_Round4`의 배치 닭 4명의 위치·방향에 PlayerStart 4개를 추가하고 미리보기의 서버 정리·클라이언트 로드 제외를 연결했다. 기존 배치와 시소·장애물 설정은 보존했다. [경기 개요](Gameplay/Overview.md#match) · [설정과 검증](Gameplay/RoundGameplaySetup.md#round4-spawn-restore).
+
+<a id="change-20261112-danger-hud-arrows"></a>
+## 2026-11-12 · 위험 HUD에 카메라 기준 방향 화살표
+
+- Codex 수행 · 미커밋. 사용자가 추가한 위험 위젯/WBP에만 흰색·짙은 테두리 방향 화살표를 추가했다. 카메라 기준으로 기울어진 쪽 하나만 표시하고 0.7초 주기로 8px 왕복한다. 기존 각도 계산·플레이어 이동/균형·표현 컴포넌트는 유지했다. [Designer 이름과 움직임 설정](UI/Overview.md#balance-danger-overlay).
+
+<a id="change-20261112-danger-hud-wbp"></a>
+## 2026-11-12 · 위험 효과의 화면 구성을 WBP로 분리
+
+- Codex 수행 · 미커밋. `WBP_CFDangerOverlay`를 기존 C++ 위험 위젯의 자식으로 만들고 전체 화면 Image/재질을 Designer 계층으로 옮겼다. C++은 각도 계산·투명도·생성/제거만 담당한다. 사용자 경고 폭 15도와 기존 다른 UI는 보존했다. [Designer 편집 위치와 연결 이름](UI/Overview.md#balance-danger-overlay).
+
+<a id="change-20261112-balance-danger-hud"></a>
+## 2026-11-12 · 탈락 각도에 따른 붉은 외곽 경고 HUD
+
+- Codex 수행 · 미커밋. 로컬 캐릭터에 전체 화면 비네트를 추가했다. 탈락 한계보다 기본 10도 전부터 선형으로 붉어지고 탈락/공중 탈락 대기에는 바로 꺼진다. `PlayerPresentation`의 `Danger Warning Angle Margin`으로 경고 폭을 조절한다. 충전 게이지의 월드 UI 전환은 후속으로 보류했다. [설정과 구현 위치](UI/Overview.md#balance-danger-overlay).
+
+<a id="change-20261112-round4-deck-boundaries"></a>
+## 2026-11-12 · 시소 판과 함께 기울어지는 투명벽
+
+- Codex 수행 · 미커밋. `BP_R4A_SeesawRig`의 판 가장자리 네 방향에 높이 6m의 투명 Box Collision을 붙여 플레이어의 판 밖 이탈을 막았다. 카메라는 통과하며 현재 194개 액터 배치와 사용자 시소 설정을 유지했다. [편집 위치·범위](Gameplay/Overview.md#round4-amusement-seesaw).
+
+<a id="change-20261112-round4-floating-refuges"></a>
+## 2026-11-12 · Round4 임시 부유 대피 발판
+
+- Codex 수행 · 미커밋. 현재 놀이동산 맵에 독립 발판 3개를 추가했다. 첫 착지 뒤 설정 시간(Details `Stand Duration`, 기본 3초)이 지나면 경고 후 붕괴하고 6초 뒤 복구한다. 기존 179개 액터 배치와 사용자 시소 설정을 보존했다. [진입 높이·에셋·서버 소유 동작](Gameplay/Overview.md#round4-amusement-seesaw).
+
+<a id="change-20261112-round4-deck-surface"></a>
+### 2026-11-12 · Round4 전투판 겹면 제거와 무광 표면
+
+- Codex 수행 · 미커밋. 전투판의 얇은 줄눈·표시 겹면을 제거하고 로컬 좌표 기반 재질 무늬로 합쳤다. Roughness 0.92·Specular 0.2로 조정하고 거리 변화에 맞춰 무늬 가장자리를 완화했다. 현재 콜라이더·Nanite·재질 슬롯·177개 액터 변환·사용자 39도/간격 5초 설정은 보존했다. [상세와 확인 범위](Gameplay/Overview.md#round4-amusement-seesaw).
+
+<a id="change-20261112-round4-gates-ferris"></a>
+### 2026-11-12 · Round4 시작 시 게이트 잠금과 대관람차 회전
+
+- Codex 수행 · 미커밋. 계단 쪽 BoardingBridge와 Gate가 게임 시작 때 기본 0.75초 동안 수납/닫힘 동작을 한 번 재생하고, 이후 시소 주기와 관계없이 닫힌 상태를 유지하도록 변경했다. 대관람차는 고정 받침대/회전 링/수평 탑승칸으로 분리하고 초당 3도 회전을 적용했다. 사용자 설정 최대 39도·시소 간격 10초와 기존 176개 액터 변환을 보존했다. [설정 위치](Gameplay/Overview.md#round4-amusement-seesaw).
+- 확인: Development Editor 빌드, 저장·재로딩, 28초 PIE의 시작 시 다리·게이트 닫힘 애니메이션 및 완료 후 수납/충돌 유지·대관람차 회전·탑승칸 수평 유지 통과. 원격 멀티는 미검증이다.
+
+<a id="change-20261111-round4-amusement-seesaw"></a>
+### 2026-11-11 · 별도 Round4 놀이동산 시소 전투장
+
+- Codex 수행 · 미커밋. `L_Round4_Amusement`를 새로 만들고 기존 Round4는 보존했다. 18×12m 전투판, 10초 간격 좌우 교대 푸셔·최대 45도 기울기, 작동 전 탑승 다리 수납/게이트, 양쪽 계단과 짧은 U 대기줄·조작실·대형 놀이공원 배경을 구성했다. 전용 에셋 39개는 `LD_Gym/LDProps/StaticMeshes/Round4` 아래에 모았다. 독립 BlockingVolume 44개가 외곽 난간 위를 막는다. [구조·편집 위치·검증 범위](Gameplay/Overview.md#round4-amusement-seesaw).
+- 확인: Development Editor 빌드, 저장·재로딩, 28초 PIE의 ±45도/약 9.99초 교대·연결 다리 수납·캐릭터의 판 탑승, 외곽 396개/보행면 13개 검사 통과. 기존 공용 애니메이션의 Inertialization 누락은 미수정이며 원격 멀티·패키징은 미검증이다. 새 맵은 직접 테스트용이고 기존 정식 라운드 목록 연결은 변경하지 않았다.
+
+<a id="change-20261111-round3-invisible-boundary"></a>
+### 2026-11-11 · Round3 낮은 외곽벽 위 투명 충돌벽
+
+- Codex 수행 · 미커밋. 외곽 네 벽 위를 게임 중 보이지 않는 BlockingVolume 38개로 막았다. 상단 월드 Z=3000cm, Pawn만 충돌하며 카메라·그림자에는 영향을 주지 않는다. 기존 배치의 위치·크기 보존과 저장·재로딩 후 충돌 응답·342개 관통 검사 통과를 확인했다. 실제 점프·원격 멀티는 미검증이다. [구간별 편집 위치](Gameplay/Overview.md#round3-dam-theme).
+
+<a id="change-20261111-round3-bridge-crates"></a>
+### 2026-11-11 · 다리 왕복 구체를 화물 상자로 교체
+
+- Codex 수행 · 미커밋. Round3 다리 높이의 `R3A_Ball_Proxy`·`R3A_Ball_Proxy2`를 기존 화물 상자 메시로 교체했다. 위치·회전·크기·3초 PingPong 이동 경로 보존을 저장·재로딩 후 확인했다. 충돌은 새 메시의 단순 박스다. [편집 위치](Gameplay/Overview.md#round3-dam-theme).
+
+<a id="change-20261111-round3-log-player-push"></a>
+### 2026-11-11 · 굴러오는 통나무의 플레이어 밀침
+
+- Codex 수행 · 미커밋. Round3 두 통나무에만 고속 접촉 밀침과 280kg 질량을 적용했다. 정지 통나무는 계속 밀 수 있고, 접근속도 120cm/s 이상에서는 속도 비례 밀침·운동량 일부 보정으로 굴러오는 통나무의 힘을 살린다. 공유 스포너의 새 기능 기본값은 꺼져 있어 다른 맵은 유지한다. [설정과 검증 범위](Gameplay/Overview.md#round3-dam-theme).
+- 확인: DebugGame/Development Editor 빌드와 임시 PIE에서 정면·반대 입력 접촉/정지 통나무 밀기 통과. 재로딩 후 두 스포너의 활성화·280kg·재생성 대기 2초 유지 확인. 실제 닭 캐릭터의 경사로 전투·원격 멀티 체감은 미검증이다.
+
+<a id="change-20261111-round3-fixed-sweeper-floor"></a>
+### 2026-11-11 · Round3 원판 고정과 회전 막대 분리
+
+- Codex 수행 · 미커밋. `R3M_Sweeper`의 원판 메시·충돌을 `R3M_Sweeper_Floor`로 분리하고 Absolute Rotation/Scale을 적용했다. 기존 회전 부모와 막대·중심축의 부착, 30도/초 속도·사용자 크기·테스트 게임모드를 유지한다. [편집 구조](Gameplay/Overview.md#round3-dam-theme).
+- 확인: 저장·재로딩 후 약 5초 PIE에서 원판 회전각 불변, 막대·중심축 약 150도 회전 및 각도 일치 확인. 다인 경기 검증은 미실행이다.
+
+<a id="change-20261111-round3-dam-theme"></a>
+### 2026-11-11 · Round3 댐 정비장 테마와 얕은 물
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 사용자 배치와 기믹 크기를 보존해 콘크리트 수조·목재 작업교·청록 배관·화물 상자·회전판 외장·외곽 암벽을 적용했다. 전용 메시 19종/재질 12종은 `/Game/LD_Gym/LDProps/StaticMeshes/Round3` 아래에 모았다. 얕은 웅덩이는 Single Layer Water와 시간 기반 잔물결을 사용하며 충돌·유체 물리는 추가하지 않았다.
+- 확인: 저장·재로딩 후 기존 액터 124개의 변환·부착·충돌 활성·Mobility 보존 비교, 약 14초 PIE에서 다리·회전판·분수 움직임 확인. 원격 멀티·패키징·통나무 재생성은 이번 변경 후 미검증. [테마·편집 위치](Gameplay/Overview.md#round3-dam-theme).
+
+<a id="change-20261110-opponent-charge-visibility"></a>
+### 2026-11-10 · 상대 점프 게이지의 화면 범위·벽 가림 처리
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 내 Screen 게이지를 보존하고 상대는 카메라 앞·화면 안에서만 World/Masked 게이지를 표시한다. 벽 뒤에서 비치지 않도록 깊이 테스트를 사용하고 런타임 렌더 타깃·재질을 초기화한다. 게이지 방향만 매 프레임 갱신하고 이름표 갱신은 기존 10Hz를 유지한다. [UI 표시 조건](UI/Overview.md#jump-charge-gauge).
+- 확인: Editor 빌드 통과. 임시 PIE의 비소유 닭 캐릭터에서 정면 표시·카메라 뒤/화면 밖 숨김, 충돌 없는 벽의 렌더 가림을 확인했다. 실제 원격 클라이언트와 패키징은 미검증이다.
+
+<a id="change-20261112-camera-death-delay-tuning"></a>
+### 2026-11-12 · 카메라 상하 범위 축소·탈락 대기 제거
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 사용자 요청으로 카메라 Pitch를 ±80도에서 ±45도로 줄이고 탈락용 0.2초 확인 타이머를 제거했다. 내부 한계·표시각 근접·지상 조건을 만족하면 자동 홉보다 먼저 즉시 탈락한다. 일반 착지 모션 회복 0.3초와 피격 기울기 지연은 유지한다.
+- 확인: 타이머 참조 제거·호출 순서·각도 설정 정적 검사, diff 검사. 빌드·실플레이는 미검증이다. [이동과 균형](Gameplay/Overview.md#balance).
+
+<a id="change-20261112-autohop-balance-gate"></a>
+### 2026-11-12 · 자동 홉으로 인한 기울기 탈락 누락 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: 앞선 지상 연속 0.2초 확인이 자동 홉으로 초기화되어 한계에 도달해도 살아남는 경로가 생겼다. 최근 로비 로그에서도 한계 도달→착지→0.3초 후 자동 홉을 확인했다.
+- 변경: 각도 확인은 공중에서도 누적하고, 실제 탈락은 지상에서만 수행한다. 탈락 검사를 다음 발사보다 먼저 처리하며 확인 중 자동 홉을 대기한다. 균형 회복 시 확인을 취소한다.
+- 확인: 30/60/120 FPS 별도 수치 회귀 검사·diff 검사. 수정 후 빌드·로비/멀티 실플레이는 미검증이다. [이동과 균형](Gameplay/Overview.md#balance).
+
+<a id="change-20261112-effects-balance-failure"></a>
+### 2026-11-12 · 게임 소리 볼륨 연결·착지 조기 탈락 보완
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 로비 효과음 설정을 모든 캐릭터 효과음과 현재 재생 음성에 연결했다. 내부 기울기 즉시 탈락을 서버 표시각 근접·지상 0.2초 확인으로 바꾸고 표시값을 복제한다. 균형 한계에서 적분을 조기 종료하던 경로를 수정했다. 사용자 보고는 충돌/점프 후 착지 상황이며 실제 사망 로그에 의한 원인 확정은 아니다.
+- 확인: 30/60/120 FPS 별도 수치 재현에서 표시각·공중/발사 제외·회복 취소·긴 프레임 제한·불안정 시간 소진과 효과음 배율 검사, diff 검사. 빌드·PIE·실계정 멀티는 미검증이다. [균형](Gameplay/Overview.md#balance), [게임 소리](Gameplay/Overview.md#combat-audio), [로비](UI/Lobby.md).
+
+<a id="change-20261112-lobby-cursor-bgm"></a>
+### 2026-11-12 · 로비 커서 숨김과 공통 배경음
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 연습 로비에서 평소 커서를 숨기고 Esc 설정 중에만 표시한다. 120 BPM·16초 자작 아케이드풍 곡을 로비와 네 라운드에 공통 적용하고 GameInstance 수명 재생·BG 볼륨 저장값 연동을 추가했다.
+- 확인: 음악 수치 재현의 클리핑·루프 양끝 검사, 커서·오디오 수명·볼륨 경로 정적 검토, diff 검사. 빌드·실제 UI/음악 재생과 맵 전환은 미검증이다. [로비](UI/Lobby.md), [배경음](Gameplay/Overview.md#background-music).
+
+<a id="change-20261112-camera-pitch"></a>
+### 2026-11-12 · 마우스 Y축 상하 시야 확대
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 전투 캐릭터의 기존 MouseY 입력 연결을 유지하고 카메라 Pitch 범위를 -80~80도로 확대했다. 로컬 입력 초기화에서 제한을 적용해 BeginPlay 당시 컨트롤러 부재로 설정이 빠지는 경로를 보완했다.
+- 확인: 입력 바인딩·카메라 제한·호출 시점 정적 검토와 diff 검사. 빌드·실제 플레이·Blueprint 카메라 연결은 미검증이다. [이동과 균형](Gameplay/Overview.md#balance).
+
+<a id="change-20261112-delayed-hit-tilt"></a>
+### 2026-11-12 · 피격 뒤 지연 상체 기울기
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 즉시 밀림은 유지하고 기본 0.4초 뒤 균형 충격과 상체 기울기를 적용한다. 월드 방향 저장으로 지연 중 회전을 반영하며, 개별 피격 예약·서버 복제·탈락/라운드 초기화를 처리한다. 상체 목표는 0.5초 유지 후 보간 복귀한다.
+- 확인: 호출·복제·초기화 경로 정적 검토와 diff 검사. 빌드·PIE·AnimBP 그래프 및 실제 다인 표시 시점은 미검증이다. [게임플레이](Gameplay/Overview.md#knockdown), [애니메이션](Animation/Overview.md#basic).
+
+<a id="change-20261111-match-esc-menu"></a>
+### 2026-11-11 · 경기 Esc 메뉴 버튼 정리
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+- 변경: `CFMatchStatusWidget`의 기본 회색 나가기 버튼을 반투명 둥근 패널·주황색 버튼으로 바꾸고 글자 크기와 여백을 지정했다. 기존 나가기 처리와 Esc 입력 경로는 유지했다.
+- 확인: UE 5.8.2 빌드, 실제 로컬 PIE에서 Esc 열기·닫기·재열기와 두 해상도 캡처 통과. 실제 EOS 매치·퇴장 통신은 재시험하지 않았다. [구조와 확인 범위](UI/Overview.md#match-esc-menu).
+
+<a id="change-20261111-lobby-notice-card"></a>
+### 2026-11-11 · 로비 매칭 안내를 카드 내부로 배치
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+- 변경: `WBP_CF_Lobby`의 안내를 제목·버튼 사이로 통합하고 자동 줄바꿈·카드 높이 확장을 적용했다. `CFLobbyWidget`의 표시 문구만 정리하고 매칭 상태/요청 처리는 유지했다.
+- 확인: UE 5.8.2 빌드·에셋 컴파일, 1280×720 및 960×640 실제 PIE 표시와 모의 제공자 기반 시작·취소·재확인 검사 통과. 실제 EOS 경기는 재시험하지 않았다. [로비 안내 상세](UI/Lobby.md#notice-card).
+
+<a id="change-20261111-final-result-table"></a>
+### 2026-11-11 · 최종 결과 화면의 점수표 정렬
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+- 변경: `CFCompletedMatchWidget`의 한 줄 문자열 나열을 `순위 / 플레이어 / 총점 / MVP` 고정 폭 표로 변경했다. 공동 순위와 긴 이름 표시를 보완하고 점수 계산·세션 종료·개인별 확인 경로는 유지했다.
+- 확인: UE 5.8.2 빌드, 두 해상도의 실제 위젯 렌더링·공동 MVP·열 정렬·확인 버튼 동작 검사 통과. 실제 EOS 경기는 재시험하지 않았다. [UI 구조와 검증 범위](UI/Overview.md#final-result-table).
+
+<a id="change-20261110-round2-match-mode-restore"></a>
+### 2026-11-10 · Round2 정식 경기 GameMode 복구
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `55c4d88`에 포함된 Round2 단독 테스트 설정 때문에 라운드 이동 후 경기 Controller·UI·색상 배정 흐름이 빠지는 문제를 확인했다. `L_Round2`의 GameMode Override만 `CFRoundGameMode`로 복구하고 EOS 대기 창 차단과 기존 배치를 유지했다.
+- 확인: UE 5.8.4에서 저장 및 별도 프로세스 재조회, 액터 817개 클래스·변환·태그·클라이언트 로드 설정과 다른 라운드 파일 보존 검사 통과. 새 C++ 빌드·실제 4PC 경기 재시험은 미실행이다. [경기 상태](Gameplay/Overview.md#match), [상세 기록](Gameplay/RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
+
+<a id="change-20261110-nickname-waiting"></a>
+### 2026-11-10 · 로비 게임 닉네임과 EOS 대기 창 노출 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 최신 작업 브랜치 `a0720d1`을 받아 동료의 조작감/색상/HUD 수정을 보존했다. 로비와 로컬 이름표에 인증된 게임 프로필 이름을 우선 적용하고, EOS 활성 세션을 기준으로 기존 수동 대기 창의 생성·등록·갱신을 차단했다. 접속 준비 표시와 4인 승인은 유지한다.
+- 확인: 이름 출처·복제 지연 조건 native 검사 추가, 독립 정적 리뷰와 diff 검사. 이 PC에는 Unreal이 없어 새 Editor 빌드·실제 로비/라운드 전환 재시험은 미실행이다.
+- 문서: [UI 개요](UI/Overview.md), [로비](UI/Lobby.md), [재시험 범위](Gameplay/MatchPresentationAndTravel.md#흐름과-경계).
+
+<a id="change-20261110-cumulative-score-order"></a>
+### 2026-11-10 · 모든 라운드 결과표를 누적 순위로 표시
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 서버의 라운드 결과 배열을 누적 점수 내림차순·동점 PlayerId순으로 정렬하고, UI의 순위도 누적 점수 기준 공동 순위로 표시한다. 실제 라운드 순위·지급 점수·라운드 승자·최종 결과 처리는 유지한다. 기권은 이름 옆에 표시한다. [라운드 표시](RoundProgression.md#현재-점수-규칙) · [UI 개요](UI/Overview.md).
+- 확인: Unreal 5.8.2 Win64 Development Editor 빌드 성공 및 변경 경로 검토. 실제 다인 경기의 결과 UI·복제 화면은 이번 변경 후 미검증이다.
+
+<a id="change-20261110-test-controls-hide"></a>
+### 2026-11-10 · 테스트 게임모드 조작 안내 제거
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `ACFKnockdownTestHUD::DrawHUD`의 안내 텍스트·상태·배경 패널만 제거하고 `R` 리셋과 캐릭터 조작을 보존했다. 정식 경기 UI와 성능 진단 출력은 변경하지 않았다. [개요](Gameplay/Overview.md#디버깅-로그).
+- 확인: Editor 빌드 성공 및 재시작 후 Round2 PIE에서 안내 패널 없이 닭 캐릭터가 표시되는 것을 확인했다.
+
+<a id="change-20261110-bumper-character-launch"></a>
+### 2026-11-10 · 범퍼의 닭 캐릭터 발사 연결
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `BP_SimpleObstacle_Bumper`에 `CharacterLauncher`를 추가해 판 상승 중 윗면의 캐릭터를 서버에서 발사한다. Details의 `Launch Speed`로 강도(기본 900cm/s, 0이면 해제)를 조절한다. 기존 타임라인·배치·충돌 설정은 보존했다. [설정과 확인](Gameplay/Overview.md#ld-bumper-launch).
+- Editor 빌드·BP 저장/별도 로딩·Round2 PIE 닭 캐릭터 발사 검사 통과. 범퍼 밖과 강도 0 비교도 확인했으며 검사 배치는 저장하지 않았다. 재시작 전 사용자 Round2의 미저장 변경은 해당 맵만 저장하여 보존했다.
+
+<a id="change-20261110-moving-platform-pause"></a>
+### 2026-11-10 · 이동 발판 위·아래 도착 대기 시간
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `BP_PhysicsObstacle_MovingPlatform`에 `EndpointPause`를 추가해 배치별 Details에서 위/아래 대기 시간을 각각 초 단위로 지정한다. 기본값 0초이며 기존 이동 컴포넌트·경로·속도 설정을 보존했다. [설정과 구현](Gameplay/Overview.md#ld-moving-obstacles).
+- 확인: Editor 빌드, BP 저장·별도 실행에서 재로딩, 실제 PIE의 양 끝 대기·반전 방향·0초 연속 이동 검사 통과. 검사 액터·수치는 맵에 저장하지 않았다.
+
+<a id="change-20261110-round2-quick-test"></a>
+### 2026-11-10 · Round2 대기창 임시 우회
+
+- Codex 수행 · 미커밋. `L_Round2`의 GameMode Override만 `CFRoundGameMode` → `CFKnockdownTestGameMode`로 변경·저장하고 PIE 직접 진입을 확인했다. 복구는 해당 설정만 되돌려 이후 맵 편집을 보존한다. [개요](Gameplay/Overview.md#경기-상태와-라운드) · [복구 기록](Gameplay/RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
+
+<a id="change-20261110-jump-charge-gauge"></a>
+### 2026-11-10 · 캐릭터 옆 세로 점프 게이지
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 로컬 캐릭터 오른쪽에 아래에서 위로 차오르는 세로 충전 게이지를 추가했다. 기존 복제 충전량을 읽고, 사망·관전·입력 잠금에서는 숨긴다. 로비 부활에도 자동 연결한다.
+- 확인: 로컬 UMG API·소유권/상태 경로 정적 검토와 diff 검사. 빌드·실제 외형·PIE는 미수행. [UI 구현](UI/Overview.md#jump-charge-gauge).
+
+<a id="change-20261110-charge-held-input"></a>
+### 2026-11-10 · 공중에서 누른 차징 입력을 착지 후 처리
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 자동 홉 중 누른 차징 입력이 지상 검사에서 버려지는 경로를 수정했다. 누른 상태를 서버에 전달하고 착지 시 자동 홉보다 먼저 충전을 시작한다. 공중 해제는 대기를 취소하며 공중 연속 발사 금지는 유지한다.
+- 확인: 입력 RPC·해제·사망/라운드 상태 정리·착지 후 처리 순서와 diff 정적 검토. 빌드·PIE는 미수행. [차징 입력](Gameplay/Overview.md#jump).
+
+<a id="change-20261110-charged-hit-power"></a>
+### 2026-11-10 · 차징 공격 밀침과 점프 높이 상향
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 차징 점프의 첫 유효 공중 충돌에서 충전량·공격 방향에 비례한 추가 밀침을 상대에게 적용한다(최대 +400cm/s). 차징 점프 수직 발사 속도를 15% 올리고 수평 속도·충전 시간·일반 홉은 유지한다.
+- 확인: 충격 계산·서버 소유 상태·소진 경로 정적 검토와 diff 공백 검사. 빌드·PIE·실전 밸런스는 미검증. [충돌](Gameplay/Overview.md#knockdown), [점프](Gameplay/Overview.md#jump).
+
+<a id="change-20261110-lobby-respawn"></a>
+### 2026-11-10 · 연습 로비 사망 후 R키 부활
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 로비에서 사망한 캐릭터만 R키로 최초 등장 위치에 다시 생성한다. UI 포커스에서도 입력을 받고, 서버에서 로비 맵·사망 상태·경기 GameMode 제외 조건을 확인한다. 매칭·로비 UI 상태는 유지한다.
+- 확인: 정적 검토 및 diff 공백 검사. 빌드·PIE는 미수행. [로비 개요](UI/Overview.md#practice-lobby), [부활 조건](UI/Lobby.md#로비에서-r키-부활).
+
+<a id="change-20261110-airborne-jump-balance"></a>
+### 2026-11-10 · 공중 연속 점프와 기울기 탈락 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 차징 시작·발사에 지상 및 발사 대기 검사를 추가하고, 지상을 벗어나면 충전을 취소한다. 공중 입력으로 속도를 멈추거나 연속 발사하는 경로를 차단했다. 기울기 한계로 인한 탈락은 지상에서만 요청한다.
+- 확인: 서버 RPC·이동 모드 전환·발사 대기 경로 정적 검토. 빌드·PIE·멀티플레이는 미수행. [점프와 균형 예외](Gameplay/Overview.md#jump).
+
+<a id="change-20261109-travel-hud-owner"></a>
+### 2026-11-09 · 라운드 맵 이동 중 HUD 크래시 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 실계정 경기의 첫 라운드 이동 로그에서 플레이어가 분리된 Controller의 위젯 생성 실패와 null 접근을 확인했다. 현재 LocalPlayer 소유권·월드 상태를 확인하고 위젯 생성·화면 등록 실패를 재시도하도록 보완했다.
+- 확인: Editor 정식 빌드 및 MatchRounds 자동 검사 3개 통과. 실제 EOS 4PC 재검증은 남아 있다. [상세 검증](Gameplay/MatchPresentationAndTravel.md#검증-기록과-남은-작업), [경기 상태](Gameplay/Overview.md#match).
+
+<a id="change-20261109-player-tint-apply"></a>
+### 2026-11-09 · 플레이어 색상 머티리얼 적용과 Editor 빌드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 복제 매크로 인수명 오류를 수정해 UE 5.8.4 Editor 정식 빌드를 완료했다. 실제 M_White_Matte가 Material Instance임을 확인해 도구를 보완하고, 공용 부모를 프로젝트의 M_CF_PlayerTintBase로 복제해 기존 BaseColor에 흰색 기본 Tint를 곱하도록 연결했다. 원본 인스턴스를 백업하고 기존 설정을 보존했다.
+- 확인: Tint 보호 검사 9개와 MatchRounds native 검사 2개 통과. 새 Editor에서 저장된 에셋·백업 비교, 공용 원본/기존 출력 보존, 동적 4색 설정·조회와 재컴파일 오류 0개 확인. 실제 화면·4PC 맵 이동/결과 흐름은 미검증이다. [적용 결과와 한계](Gameplay/MatchPresentationAndTravel.md#검증-기록과-남은-작업).
+
+<a id="change-20261109-round-travel-presentation"></a>
+### 2026-11-09 · 플레이어 식별·네 맵 랜덤 이동·개인 결과 복귀 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: 사용자가 선행 EOS 실계정 4인·같은 월드 4라운드 성공을 확인한 뒤 닉네임/색상 식별, 네 맵 랜덤 순서, 경기 전 걷기 제거와 각자 결과 확인 후 연습 로비 복귀를 요청했다.
+- 변경: GI의 서버 맵·색상 순서와 점수/신원 이전, 서버 Seamless Travel, 이름표·복제 Tint, 접속 준비 화면, 최종 reliable 결과/4인 ACK 후 finished, 개인별 결과 유지·복귀를 연결했다. 머티리얼은 원본 BaseColor를 보존하는 별도 Editor 적용 도구로 준비한다.
+- 확인: Python 보호 검사 25개 통과, native 검사 추가·정적 코드 리뷰 수행. 이 PC에는 Unreal이 없어 새 Editor 빌드·실제 에셋 적용·4PC 맵 이동/결과 검증은 미완료다.
+- 문서: [구현과 QA](Gameplay/MatchPresentationAndTravel.md), [Network](Network/Overview.md#eos-round1), [계획](EOS/superpowers/plans/2026-11-09-round-travel-presentation.md).
+
+<a id="change-20261108-eos-travel-url"></a>
+### 2026-11-08 · EOS 참가 주소의 대괄호 손실 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 실계정 매칭 후 참가자가 Round1 이동에서 실패한 로그를 확인했다. FURL 재직렬화로 EOS 주소의 대괄호가 사라지는 문제를 막기 위해 OSS 주소 원문에 승인 옵션만 추가한다.
+- 확인: 기존 방식에서 InvalidURL을 재현한 회귀 검사 추가. 수정 후 Editor 빌드 및 EOS 검사 3개 통과. 실제 네 PC 재접속·자동 시작은 미검증이다. [상세 기록](Network/EOSRound1Session.md#검증-기록).
+
+<a id="change-20261108-eos-session-build-fix"></a>
+### 2026-11-08 · EOS 세션 코드의 Editor 빌드 오류 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: UE 5.8.4의 실제 OnlineReplStructs 헤더 경로를 사용하고 계약 검사 두 곳의 FString 치환 인수 타입을 수정했다.
+- 확인: Editor 정식 빌드와 EOS 계약·응답 보호 검사 2개 통과. 실제 EOS 4PC 접속은 미검증이다. [검증 기록](Network/EOSRound1Session.md#검증-기록).
+
+<a id="change-20261108-eos-round1-session"></a>
+### 2026-11-08 · EOS Round1 4인 접속과 자동 시작 연결 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 원격 `8578b23` 반영 후 티켓 배정 인계, 실제 EOS 세션 생성/명단 제한 검색·참가·Round1 P2P 이동, 실제 접속 후 joined·Playing 후 started 보고, 서버 4인 준비와 자동 시작 승인을 연결했다. 실패·인증·세션 정리 경로와 일반 LAN 분리를 포함한다. EOSLocal은 Secret 보존 `-Upgrade`로 갱신한다.
+- 확인: 가짜 자격 증명의 PowerShell 설정 검사 통과. native 계약 검사 추가와 코드 리뷰를 수행했다. Unreal 미설치로 새 C++ 빌드·실제 EOS 4인 접속은 아직 미검증이다. 맵 전환·최종 finished 보고는 후속 범위다.
+- 문서: [Network 개요](Network/Overview.md#eos-round1), [구조·테스트 순서·한계](Network/EOSRound1Session.md), [구현 계획](EOS/superpowers/plans/2026-11-08-eos-round1-session.md).
+
+<a id="change-20261108-round-gameplay-apply"></a>
+### 2026-11-08 · 라운드 경기 설정 적용과 로컬 다인 생성 검증
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `CFRoundGameMode`의 기존 Actor 멤버와 겹친 지역 변수명을 수정해 Editor 정식 빌드를 완료했다. 네 맵을 백업한 뒤 경기 GameMode와 미리보기 태그·클라이언트 로드 제외 설정을 적용하고 원본 배치·스폰 보존과 저장·재로딩을 확인했다.
+- 확인: Python 19개와 C++ 스폰 예약 검사 통과. 네 맵의 같은 프로세스 Listen Server/PIE 클라이언트에서 3인 시작 거절·4인 대기/전투 Pawn 생성·소유·미리보기 제외·카운트다운 복제 통과. 추가 검사에서 서버 시작 XY·시점 Yaw를 확인했다. 입력·렌더링·전체 경기·다른 PC·EOS·맵 전환은 미검증이다.
+- 문서: [적용 결과·제한](Gameplay/RoundGameplaySetup.md#이-pc에서-확인한-결과), [경기 상태](Gameplay/Overview.md#match).
+
+<a id="change-20261108-round-gameplay-setup"></a>
+### 2026-11-08 · 네 라운드 경기 GameMode 준비 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 스폰 적용 커밋 `8c50f59`를 받은 뒤 별도 `CFRoundGameMode`를 구현했다. 기존 경기·입력·UI를 재사용하며 최소 4인과 스폰 예약을 제공한다. 에디터 도구는 백업 후 GameMode Override와 네 미리보기의 태그·클라이언트 로드 제외를 연결한다. 서버는 명시된 미리보기만 초기 정리한다.
+- 확인 범위: Python 보호 검사 19개 통과. C++ 자동화는 작성했으며 Unreal 미설치로 빌드·실제 적용·4인 생성은 미실행이다. EOS 입장·자동 시작·라운드별 맵 전환은 후속 범위다.
+- 문서: [경기 설정·검증](Gameplay/RoundGameplaySetup.md), [경기 상태](Gameplay/Overview.md#match), [계획](EOS/superpowers/plans/2026-11-08-round-gameplay-setup.md).
+
+<a id="change-20261108-round-spawn-link-apply"></a>
+### 2026-11-08 · 네 라운드 맵에 스폰 위치 적용
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 기존 연결 도구를 Unreal 5.8.4 Editor에서 조회 후 적용했다. Round1~3에 PlayerStart 4개씩 생성하고 Round4의 기존 4개를 재사용해 `ArenaSpawn`·`CFLinkedRoundSpawn` 태그와 배치 캐릭터의 위치·회전을 연결했다. 적용 전 네 맵을 `Saved/RoundSpawnLink/20261108_210436_365321/`에 백업했다.
+- 확인: 대상 선정·보호 검사 11개 통과, 네 맵 저장·재로딩 후 스폰 4개와 원본 캐릭터/GameMode 보존 검사 통과. 시각 확인·실제 충돌·4인 경기·맵 전환은 미검증이다.
+- 문서: [적용 결과와 다음 작업](Gameplay/RoundSpawns.md), [경기 상태](Gameplay/Overview.md#match).
+
+<a id="change-20261108-round-spawn-link-tool"></a>
+### 2026-11-08 · 배치 캐릭터 기반 라운드 스폰 연결 도구
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 작업 브랜치에 최신 dev `e5401e9`를 반영하고, 각 라운드의 캐릭터 4곳을 기존 경기 코드의 `ArenaSpawn` PlayerStart에 연결하는 도구를 추가했다. 기본 조회와 명시적 적용을 구분하고 미저장 작업·모호한 대상·캡슐 겹침을 거절한다. 적용 시 네 맵 백업·저장·재로딩 확인을 수행하며 캐릭터/GameMode는 바꾸지 않는다.
+- 확인 범위: 일반 Python 대상 선정·보호 검사 11개 통과. Unreal 미설치로 실제 에셋 적용·4인 스폰은 미실행이며 `.umap`을 수정하지 않았다.
+- 문서: [시작 위치 연결](Gameplay/RoundSpawns.md), [경기 상태](Gameplay/Overview.md#match).
 
 <a id="change-20261108-round1-ring-expand"></a>
 ### 2026-11-08 · Round1 중앙 스파링장을 16m로 확대

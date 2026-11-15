@@ -1,8 +1,11 @@
 #include "Character/ChickenCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Network/CFWaitingNetwork.h"
+#include "Character/CFPlayerPresentationComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "HAL/IConsoleManager.h"
 
@@ -123,6 +126,15 @@ void AChickenCharacter::OnMovementModeChanged(
     }
 
     // 4. 이동 상태 출력
+    if (HasAuthority() && !MoveComp->IsMovingOnGround())
+    {
+        // Cancel accumulated power in the air; a held input resumes on landing.
+        bIsCharging = false;
+        JumpAim = FVector2D::ZeroVector;
+        CurrentJumpPower = 0.f;
+        TiltAccumulator = 0.f;
+    }
+
     UE_LOG(LogTemp, Warning,
         TEXT("[ModeChange-3] Prev=%d Current=%d "
             "Custom=%u Fallen=%d"),
@@ -134,6 +146,7 @@ void AChickenCharacter::OnMovementModeChanged(
 
 AChickenCharacter::AChickenCharacter()
 {
+    PlayerPresentation = CreateDefaultSubobject<UCFPlayerPresentationComponent>(TEXT("PlayerPresentation"));
 	PrimaryActorTick.bCanEverTick = true;
     bReplicates = true;
     SetReplicateMovement(true);
@@ -163,21 +176,12 @@ void AChickenCharacter::BeginPlay()
 
 	// 닭의 Capsule 충돌 이벤트 등록.
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AChickenCharacter::OnChickenHit);
-
-	// 카메라 상하 회전 제한.
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		if (PC->PlayerCameraManager)
-		{
-			PC->PlayerCameraManager->ViewPitchMin = -25.f;
-			PC->PlayerCameraManager->ViewPitchMax = 20.f;
-		}
-	}
 }
 
 void AChickenCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+    if (HasAuthority()) UpdateCollisionTilt();
     UpdateUpperBodyTilt(DeltaTime);
     ChickenAudio->Update(DeltaTime, bIsCharging && bRoundInputEnabled && !bIsFallen && !bKnockdownPending, GetNormalizedJumpCharge());
     DebugState();
@@ -211,7 +215,33 @@ void AChickenCharacter::Tick(float DeltaTime)
 	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
 	// 차징 점프 게이지 채우기.
-	if (HasAuthority() && bIsCharging && !bIsFallen)
+	// Mesh 회전도 같이 연결.
+    // Confirm the visible balance limit before any landing-triggered launch.
+    if (HasAuthority())
+    {
+        const float VisualDelta = FMath::Max(0.f, DeltaTime);
+        const float Alpha = 1.f - FMath::Exp(-FMath::Max(0.1f, VisualTiltResponse) * VisualDelta);
+        FVector2D Step = (BodyTilt - VisualBodyTilt) * Alpha;
+        const float MaxStep = FMath::Max(1.f, MaxVisualTiltSpeed) * VisualDelta / 35.f;
+        if (Step.Size() > MaxStep) Step = Step.GetSafeNormal() * MaxStep;
+        VisualBodyTilt += Step;
+    }
+    const FRotator VisualRotation(
+        BaseMeshRotation.Pitch - VisualBodyTilt.Y * 35.f,
+        BaseMeshRotation.Yaw,
+        BaseMeshRotation.Roll + VisualBodyTilt.X * 35.f);
+    GetMesh()->SetRelativeRotation(VisualRotation);
+    if (HasAuthority()) UpdateBalanceFailure();
+    if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
+
+    // Buffered holds win over auto-hop when the movement component reaches ground.
+    if (HasAuthority() && bLocalChargeHeld && !bIsCharging &&
+        GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->PendingLaunchVelocity.IsZero())
+    {
+        StartJumpCharge();
+    }
+
+    if (HasAuthority() && bIsCharging && !bIsFallen)
 	{
         UpdateJumpAim();
 		CurrentJumpPower = FMath::Clamp(CurrentJumpPower + (ChargeRate * DeltaTime), MinJumpPower, FMath::Max(MinJumpPower, MaxJumpPower));
@@ -234,23 +264,20 @@ void AChickenCharacter::Tick(float DeltaTime)
 		}
 	}
 
-	// Mesh 회전도 같이 연결.
-    const float VisualDelta = FMath::Max(0.f, DeltaTime);
-    const float Alpha = 1.f - FMath::Exp(-FMath::Max(0.1f, VisualTiltResponse) * VisualDelta);
-    FVector2D Step = (BodyTilt - VisualBodyTilt) * Alpha;
-    const float MaxStep = FMath::Max(1.f, MaxVisualTiltSpeed) * VisualDelta / 35.f;
-    if (Step.Size() > MaxStep) Step = Step.GetSafeNormal() * MaxStep;
-    VisualBodyTilt += Step;
-    const FRotator VisualRotation(
-        BaseMeshRotation.Pitch - VisualBodyTilt.Y * 35.f,
-        BaseMeshRotation.Yaw,
-        BaseMeshRotation.Roll + VisualBodyTilt.X * 35.f);
-    GetMesh()->SetRelativeRotation(VisualRotation);
 }
 
 void AChickenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+    // Apply after local possession; BeginPlay may run before a controller exists.
+    if (APlayerController* PC = Cast<APlayerController>(GetController()))
+    {
+        if (PC->PlayerCameraManager)
+        {
+            PC->PlayerCameraManager->ViewPitchMin = -10.f;
+            PC->PlayerCameraManager->ViewPitchMax = 55.f;
+        }
+    }
 	PlayerInputComponent->BindAxis("MoveForward", this, &AChickenCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AChickenCharacter::MoveRight);
 
@@ -268,6 +295,8 @@ void AChickenCharacter::Landed(const FHitResult& Hit)
         *GetNameSafe(Hit.GetActor()), *Hit.ImpactPoint.ToString(), *GetVelocity().ToString(),
         *GetCharacterMovement()->GetMovementName(), bIsFallen, bKnockdownPending);
     Super::Landed(Hit);
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
     if (!HasAuthority() || !bRoundInputEnabled) return;
     MulticastPlaySound(EChickenSound::Land, FMath::Clamp(FMath::Abs(GetVelocity().Z) / 700.f, 0.15f, 1.f));
     if (bKnockdownPending)
@@ -320,8 +349,42 @@ void AChickenCharacter::MoveRight(float Value)
 	}
 }
 
+float AChickenCharacter::GetBalanceDangerIntensity(float WarningAngleMargin) const
+{
+    if (!bEnableBalanceFailure || !bRoundInputEnabled || bIsFallen || bKnockdownPending || MaxBodyTilt <= 0.f)
+        return 0.f;
+    // Match the dominant-axis failure check, including diagonal tilt.
+    const float Limit = GetBalanceFailureAngleDegrees();
+    const float Margin = FMath::Clamp(WarningAngleMargin, .1f, Limit);
+    const float Angle = FMath::Max(FMath::Abs(BodyTilt.X), FMath::Abs(BodyTilt.Y)) * 35.f;
+    return FMath::Clamp((Angle - (Limit - Margin)) / Margin, 0.f, 1.f);
+}
+
+void AChickenCharacter::UpdateBalanceFailure()
+{
+    bool bVisibleLimit = false;
+    for (int32 Axis = 0; Axis < 2; ++Axis)
+        bVisibleLimit |= FMath::Abs(BodyTilt[Axis]) >= MaxBodyTilt - KINDA_SMALL_NUMBER
+            && FMath::Abs(VisualBodyTilt[Axis]) >= FMath::Max(0.f, MaxBodyTilt - 1.f / 35.f)
+            && VisualBodyTilt[Axis] * BodyTilt[Axis] > 0.0;
+    if (!bEnableBalanceFailure || MaxBodyTilt <= 0.f || !bVisibleLimit) return;
+    // No extra hold time: evaluate the visible limit before the next automatic hop.
+    const auto* Movement = GetCharacterMovement();
+    if (Movement->IsMovingOnGround()
+        && Movement->PendingLaunchVelocity.IsZero())
+    {
+        CF_EVENT(LogChickenTilt, "ConfirmedBalanceFailure Body=%s Visual=%s Limit=%.3f",
+            *BodyTilt.ToString(), *VisualBodyTilt.ToString(), MaxBodyTilt);
+        FallOver();
+    }
+}
+
 void AChickenCharacter::FallOver()
 {
+    // Airborne tilt is balance state, not an elimination request.
+    const auto* Movement = GetCharacterMovement();
+    if (!Movement->IsMovingOnGround() || !Movement->PendingLaunchVelocity.IsZero()) return;
+
     // BodyTilt.Y uses the opposite sign to the character's local right axis.
     const ECFKnockdownDirection Direction = FMath::Abs(BodyTilt.X) >= FMath::Abs(BodyTilt.Y)
         ? (BodyTilt.X >= 0.f ? ECFKnockdownDirection::Forward : ECFKnockdownDirection::Back)
@@ -336,8 +399,14 @@ bool AChickenCharacter::StartKnockdown(ECFKnockdownDirection Direction)
     if (!HasAuthority() || !bRoundInputEnabled || bIsFallen || bKnockdownPending || static_cast<uint8>(Direction) > 3) return false;
     if (auto* Mode=GetWorld()->GetAuthGameMode<ACFWaitingGameMode>())
         if (!Mode->MarkPlayerEliminated(GetPlayerState())) return false;
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
+    bLocalChargeHeld = false;
     KnockdownDirection = Direction;
     UnstableBalanceRemaining = 0.f;
+    PendingCollisionTilts.Reset();
+    CollisionUpperBodyTilt = FVector::ZeroVector;
+    CollisionUpperBodyEndTime = 0.0;
     CurrentTilt = FVector2D::ZeroVector;
     JumpAim = FVector2D::ZeroVector;
     bIsCharging = false;
@@ -388,12 +457,18 @@ void AChickenCharacter::StartJumpCharge()
     CF_EVENT(LogChickenMovement, "ChargePressed Before=%s Round=%d Fallen=%d Pending=%d",
         *GetVelocity().ToString(), bRoundInputEnabled, bIsFallen, bKnockdownPending);
 	// 입력하자마자 로컬에서 잠금.
-	bLocalChargeHeld = true;
+    if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
+    // Remember the press even in the air, and send it before the ground check.
+    bLocalChargeHeld = true;
+    if (!HasAuthority()) ServerSetCharge(true);
+
+    const auto* Movement = GetCharacterMovement();
+    if (bIsCharging || !Movement->IsMovingOnGround() || !Movement->PendingLaunchVelocity.IsZero()) return;
 
 	GetCharacterMovement()->StopMovementImmediately();
 	ConsumeMovementInputVector();
 
-    if (!HasAuthority()) { if (bRoundInputEnabled) ServerSetCharge(true); return; }
+    if (!HasAuthority()) return;
 	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
 	// 차징 시작하면 자동으로 뛰는 걸 멈춤.
@@ -413,12 +488,38 @@ void AChickenCharacter::UpdateUpperBodyTilt(float DeltaTime)
     }
     const float VisualDelta = FMath::Max(0.f, DeltaTime);
     const float Alpha = 1.f - FMath::Exp(-FMath::Max(0.1f, UpperBodyTiltResponse) * VisualDelta);
-    FVector2D Step = (RawTiltInput - CurrentTilt) * Alpha;
+    const FVector LocalReaction = GetActorTransform().InverseTransformVectorNoScale(CollisionUpperBodyTilt);
+    const FVector2D TargetTilt(FMath::Clamp(RawTiltInput.X + LocalReaction.X, -1.0, 1.0), FMath::Clamp(RawTiltInput.Y - LocalReaction.Y, -1.0, 1.0));
+    FVector2D Step = (TargetTilt - CurrentTilt) * Alpha;
     const float MaxStep = FMath::Max(0.1f, MaxUpperBodyTiltSpeed) * VisualDelta;
     if (Step.Size() > MaxStep) Step = Step.GetSafeNormal() * MaxStep;
     CurrentTilt += Step;
 }
 
+void AChickenCharacter::UpdateCollisionTilt()
+{
+    if (!bRoundInputEnabled || bIsFallen || bKnockdownPending)
+    {
+        PendingCollisionTilts.Reset();
+        CollisionUpperBodyTilt = FVector::ZeroVector;
+        return;
+    }
+
+    const double Now = GetWorld()->GetTimeSeconds();
+    if (Now >= CollisionUpperBodyEndTime) CollisionUpperBodyTilt = FVector::ZeroVector;
+    while (!PendingCollisionTilts.IsEmpty() && PendingCollisionTilts[0].ApplyTime <= Now)
+    {
+        const FVector WorldKick = PendingCollisionTilts[0].WorldKick;
+        PendingCollisionTilts.RemoveAt(0);
+        const FVector LocalKick = GetActorTransform().InverseTransformVectorNoScale(WorldKick);
+        TiltVelocity += FVector2D(LocalKick.X, -LocalKick.Y);
+        EnterUnstableBalance();
+        // Hold the upper-body target briefly; existing smoothing blends in and out.
+        CollisionUpperBodyTilt = WorldKick.GetClampedToMaxSize(1.f);
+        CollisionUpperBodyEndTime = Now + 0.5;
+        ForceNetUpdate();
+    }
+}
 void AChickenCharacter::EnterUnstableBalance()
 {
     if (!HasAuthority() || !bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
@@ -436,17 +537,30 @@ void AChickenCharacter::UpdateJumpAim()
 
 void AChickenCharacter::ExecuteJump()
 {
+    bLocalChargeHeld = false;
     CF_EVENT(LogChickenMovement, "ChargeReleased Power=%.3f Charging=%d Round=%d Fallen=%d Pending=%d",
         CurrentJumpPower, bIsCharging, bRoundInputEnabled, bIsFallen, bKnockdownPending);
     if (!HasAuthority()) { if (bRoundInputEnabled) ServerSetCharge(false); return; }
 	if (!bRoundInputEnabled || !bIsCharging || bIsFallen || bKnockdownPending) return;
-	bIsCharging = false;
+    bIsCharging = false;
+
+    // Recheck on the server: a charged character can be pushed off a ledge.
+    const auto* Movement = GetCharacterMovement();
+    if (!Movement->IsMovingOnGround() || !Movement->PendingLaunchVelocity.IsZero())
+    {
+        JumpAim = FVector2D::ZeroVector;
+        CurrentJumpPower = 0.f;
+        TiltAccumulator = 0.f;
+        return;
+    }
 
     UpdateJumpAim();
     const FVector AimWorldDirection =
         (GetViewMovementDirection(this, EAxis::X) * JumpAim.X - GetViewMovementDirection(this, EAxis::Y) * JumpAim.Y).GetSafeNormal2D();
     // Charge controls power; balance must not redirect or flatten the jump.
-    FVector LaunchVelocity = (AimWorldDirection * 0.95f + FVector::UpVector) * CurrentJumpPower;
+    FVector LaunchVelocity = (AimWorldDirection * 0.95f + FVector::UpVector * FMath::Max(1.f, ChargedJumpVerticalScale)) * CurrentJumpPower;
+    AirborneAttackCharge = GetNormalizedJumpCharge();
+    AirborneAttackDirection = AimWorldDirection;
 
 	bInLandingRecovery = false;
 	CF_EVENT(LogChickenMovement, "JumpLaunch Kind=Charged Power=%.3f Aim=%s Launch=%s Before=%s SerialNext=%d",
@@ -567,16 +681,12 @@ void AChickenCharacter::UpdateBodyTilt(float DeltaTime)
                     *BodyTilt.ToString(), *TiltVelocity.ToString(), MaxBodyTilt, bEnableBalanceFailure);
             }
             bDebugTiltAtLimit = true;
-			TiltVelocity = FVector2D::ZeroVector;
-
-			if (bEnableBalanceFailure)
-			{
-				FallOver();
-			}
-
-            return;
+            // Stop only outward velocity on saturated axes; finish every integration step.
+            for (int32 Axis = 0; Axis < 2; ++Axis)
+                if (FMath::Abs(BodyTilt[Axis]) >= MaxBodyTilt && TiltVelocity[Axis] * BodyTilt[Axis] > 0.0)
+                    TiltVelocity[Axis] = 0.0;
         }
-        bDebugTiltAtLimit = false;
+        else bDebugTiltAtLimit = false;
     }
     CF_FRAME(2, LogChickenTilt, "BalanceEnd Body=%s TiltVelocity=%s Fallen=%d InputReleased=%d",
         *BodyTilt.ToString(), *TiltVelocity.ToString(), bIsFallen, RawTiltInput.IsNearlyZero());
@@ -587,7 +697,9 @@ void AChickenCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(ThisClass,RawTiltInput);
+    DOREPLIFETIME(ThisClass,CollisionUpperBodyTilt);
     DOREPLIFETIME(ThisClass,BodyTilt);
+    DOREPLIFETIME(ThisClass,VisualBodyTilt);
     DOREPLIFETIME(ThisClass,bIsFallen);
     DOREPLIFETIME(ThisClass,CurrentJumpPower);
     DOREPLIFETIME(ThisClass,bIsCharging);
@@ -603,11 +715,17 @@ void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
 {
     if (!HasAuthority()) return;
     RecentCollisionTimes.Reset();
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
+    bLocalChargeHeld = false;
     bRoundFinished=false;
     bRoundInputEnabled=bEnabled;
 
     RawTiltInput=BodyTilt=CurrentTilt=FVector2D::ZeroVector;
     UnstableBalanceRemaining = 0.f;
+    PendingCollisionTilts.Reset();
+    CollisionUpperBodyTilt = FVector::ZeroVector;
+    CollisionUpperBodyEndTime = 0.0;
     JumpAim = FVector2D::ZeroVector;
     VisualBodyTilt = FVector2D::ZeroVector;
 	TiltVelocity = FVector2D::ZeroVector;
@@ -622,10 +740,16 @@ void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
 void AChickenCharacter::FinishRound()
 {
     if (!HasAuthority()) return;
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
+    bLocalChargeHeld = false;
     bRoundFinished=true;
     bRoundInputEnabled=false;
     RawTiltInput=BodyTilt=CurrentTilt=FVector2D::ZeroVector;
     UnstableBalanceRemaining = 0.f;
+    PendingCollisionTilts.Reset();
+    CollisionUpperBodyTilt = FVector::ZeroVector;
+    CollisionUpperBodyEndTime = 0.0;
     JumpAim = FVector2D::ZeroVector;
     VisualBodyTilt = FVector2D::ZeroVector;
 	TiltVelocity = FVector2D::ZeroVector;
@@ -841,15 +965,29 @@ void AChickenCharacter::OnChickenHit(
 		Now
 	);
 
-    CF_EVENT(LogChickenCollision, "PushDispatch Other=%s RelativeVelocity=%s ClosingSpeed=%.3f Direction=%s Mode=ClosingSpeed CalculatedDeltaV=%.3f SelfRequest=%s OtherRequest=%s Cooldown=Passed Limit=%.3f",
+    const float SelfAttackBonus = GetChargedCollisionBonus(Direction);
+    const float OtherAttackBonus = Other->GetChargedCollisionBonus(-Direction);
+    CF_EVENT(LogChickenCollision, "PushDispatch Other=%s RelativeVelocity=%s ClosingSpeed=%.3f Direction=%s Mode=ClosingSpeedAndCharge BaseDeltaV=%.3f SelfRequest=%s OtherRequest=%s Cooldown=Passed Limit=%.3f",
         *Other->GetName(), *(GetVelocity() - Other->GetVelocity()).ToString(),
         ClosingSpeed, *Direction.ToString(),
-        PushSpeed, *(-Direction * PushSpeed).ToString(), *(Direction * PushSpeed).ToString(), CollisionCooldown);
+        PushSpeed, *(-Direction * (PushSpeed + OtherAttackBonus)).ToString(), *(Direction * (PushSpeed + SelfAttackBonus)).ToString(), CollisionCooldown);
 
-	ApplyCollisionResponse(-Direction * PushSpeed);
-	Other->ApplyCollisionResponse(Direction * PushSpeed);
+    // Charge increases the impulse delivered to the opponent, not our own recoil.
+    AirborneAttackCharge = Other->AirborneAttackCharge = 0.f;
+    ApplyCollisionResponse(-Direction * (PushSpeed + OtherAttackBonus));
+    Other->ApplyCollisionResponse(Direction * (PushSpeed + SelfAttackBonus));
     // The accepted pair emits once; the other capsule shares the cooldown.
     MulticastPlaySound(EChickenSound::Collision, FMath::Clamp(ClosingSpeed / 700.f, 0.f, 1.f));
+}
+
+float AChickenCharacter::GetChargedCollisionBonus(const FVector& TowardOther) const
+{
+    const auto* Movement = GetCharacterMovement();
+    if ((!Movement->IsFalling() && Movement->PendingLaunchVelocity.IsZero()) ||
+        FVector::DotProduct(GetVelocity(), TowardOther) <= 0.f) return 0.f;
+    // Glancing hits receive less bonus; being struck from behind is not an attack.
+    const float Alignment = FMath::Clamp(FVector::DotProduct(AirborneAttackDirection, TowardOther), 0.f, 1.f);
+    return FMath::Max(0.f, MaxChargedCollisionBonus) * AirborneAttackCharge * Alignment;
 }
 
 void AChickenCharacter::ApplyCollisionResponse(
@@ -876,29 +1014,11 @@ void AChickenCharacter::ApplyCollisionResponse(
     GetCharacterMovement()->AddImpulse(CollisionImpulse, true);
     bInLandingRecovery = false;
 
-    // 2. 월드 기준 충격 방향을 캐릭터 기준으로 변환.
-    const FVector LocalImpulse =
-        GetActorTransform().InverseTransformVectorNoScale(
-            HorizontalImpulse
-        );
-
-    // 기존 BodyTilt 규칙: X는 전후, Y는 오른쪽의 반대 부호.
-    const FVector2D BalanceImpulse(
-        LocalImpulse.X,
-        -LocalImpulse.Y
-    );
-
-    // 3. 충격 방향으로 몸이 기울어지는 속도를 추가.
-    // 한 번의 충돌로 추가되는 양만 제한.
-    const FVector2D TiltKick =
-        (BalanceImpulse * CollisionTiltScale)
-        .GetClampedToMaxSize(MaxCollisionTiltImpulse);
-
-    TiltVelocity += TiltKick;
-    EnterUnstableBalance();
-    CF_EVENT(LogChickenCollision, "PushApplied Requested=%s AppliedDeltaV=%s VelocityChangeMode=1 VelocityNow=%s TiltKick=%s TiltVelocity=%s Fallen=%d",
-        *VelocityChange.ToString(), *CollisionImpulse.ToString(), *GetVelocity().ToString(),
-        *TiltKick.ToString(), *TiltVelocity.ToString(), bIsFallen);
+    // Queue every accepted hit independently so repeated hits cannot postpone it.
+    const FVector WorldKick = (HorizontalImpulse * CollisionTiltScale).GetClampedToMaxSize(MaxCollisionTiltImpulse);
+    PendingCollisionTilts.Add({GetWorld()->GetTimeSeconds() + FMath::Clamp(CollisionTiltDelay, 0.3f, 0.5f), WorldKick});
+    CF_EVENT(LogChickenCollision, "PushApplied Requested=%s AppliedDeltaV=%s DelayedWorldKick=%s",
+        *VelocityChange.ToString(), *CollisionImpulse.ToString(), *WorldKick.ToString());
     if (DebugPendingPushCount == 0)
     {
         DebugPushFrame = GFrameCounter;

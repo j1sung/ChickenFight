@@ -1,4 +1,4 @@
-# Gameplay 개요
+﻿# Gameplay 개요
 
 > 전체 문서 갱신: 2026-10-01 (KST) · @j1sung
 > 갱신 기준: 커밋 f7132fa9402b9acd6625877e55b917fc03bdeef7
@@ -19,23 +19,49 @@
 <a id="balance"></a>
 ## 이동과 균형
 
-2026-11-05 표현 조정: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `VisualBodyTilt`는 서버 균형값과 분리된 로컬 표현값이다. `VisualTiltResponse=6`의 지수 보간과 `MaxVisualTiltSpeed=100`도/초의 변화량 제한을 함께 적용하고 BeginPlay에서 읽은 메시 기본 방향에 더한다. 이 표현값은 균형 실패 판정·발사 방향에 사용하지 않는다. 이후 2026-11-06 조작감 변경으로 입력 기울기 제한과 중심 자동 복귀를 적용했다. 회전 제한으로 실제 판정과 보이는 기울기의 차이가 생길 수 있으므로 플레이에서 조정해야 한다.
+2026-11-12 카메라 상하 시야 변경(Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋): 기존 `MouseY → LookUp → AddControllerPitchInput` 연결을 유지하고 Pitch 제한을 기존 -25~20도에서 조정했으며, 후속 사용자 요청으로 현재 -45~45도를 사용한다. 컨트롤러가 없을 수 있는 `BeginPlay` 대신 로컬 소유 후 `SetupPlayerInputComponent`에서 카메라 매니저에 적용한다. 코드·입력 설정 정적 검토만 수행했으며 Blueprint 카메라 연결과 실제 플레이는 미검증이다.
+
+2026-11-05 표현 조정: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `VisualBodyTilt`는 서버 균형값과 분리된 표시용 기울기다. 2026-11-12부터 서버에서 보간해 복제하며 클라이언트는 추가 보간 없이 같은 표시값을 사용한다. `VisualTiltResponse=6`의 지수 보간과 `MaxVisualTiltSpeed=100`도/초의 변화량 제한을 함께 적용하고 BeginPlay에서 읽은 메시 기본 방향에 더한다. 발사 방향에는 사용하지 않는다. 2026-11-12부터 균형 실패는 내부 한계에 더해 표시 기울기와 내부 한계·표시각 근접 조건과 실제 탈락 시 지상 여부를 함께 검사하며 추가 확인 시간은 없다. 이후 2026-11-06 조작감 변경으로 입력 기울기 제한과 중심 자동 복귀를 적용했다. 회전 제한으로 실제 판정과 보이는 기울기의 차이가 생길 수 있으므로 플레이에서 조정해야 한다.
 > 수치·역입력 회복 조정: 2026-10-30 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 > 최근 기능 변경: 2026-09-29 · @sunsi-game (`87afe94`의 GitHub noreply ID 근거)
 
-`AChickenCharacter`는 MoveForward/MoveRight 입력으로 시점의 수평 방향으로 이동한다. 이동 방향은 `GetControlRotation().Yaw`에서 즉시 계산하며 캐릭터 회전 보간을 기다리지 않는다. 2026-11-06 조작감 변경(Codex 수행, 요청자 GitHub ID 확인 필요, 미커밋)으로 평상시 기울기는 WASD 입력을 계속 적분하는 방식에서 안전한 목표값을 따라가는 임계 감쇠 스프링으로 바뀌었다. 정규화 입력 × MaxBodyTilt × InputTiltLimitRatio(기본 0.35, 최대 0.5)가 목표다. 입력을 놓으면 목표가 0이 되어 자동으로 중심으로 복귀한다. BalanceReturnSpeed 기본 2/s이며 0.1~10 범위로 제한한다. 최대 1/120초 단위로 가속도 `(TargetTilt - BodyTilt) × Response² - 2 × Response × TiltVelocity`를 적분한다. TiltInputAcceleration, CounterTiltInputMultiplier, CounterTiltBraking, TiltGravityStrength, TiltDamping은 아래 불안정 상태에서만 사용한다. 이전 TiltSpeed/TiltRecoverySpeed/MaxTiltTime 필드는 현재 계산에서 사용하지 않는다. 전투 캐릭터 기본 MaxWalkSpeed는 275cm/s다. 충돌은 기존처럼 TiltVelocity에 충격을 더하며 실제 BodyTilt는 입력 목표 범위로 강제 제한하지 않는다. 어느 축이 MaxBodyTilt=60/35(약 1.714)에 도달하면 넘어짐을 요청한다. 기본 입력만 유지할 때 목표 기울기는 0.6(메시 목표 약 21도)이고 넘어짐 한계는 약 60도다. 평상시의 자동 복귀가 충돌 직후까지 적용되지 않도록 아래 불안정 상태를 사용한다. 실제 충돌 강도는 플레이 조정이 필요하다. 30/60/120 FPS의 별도 수치 시뮬레이션에서 10초 입력 후 10초 해제 시 복귀와 한계 근처의 외부 충격에 의한 한계 초과를 확인했다. 게임 빌드·PIE 검증은 수행하지 않았다.
+`AChickenCharacter`는 MoveForward/MoveRight 입력으로 시점의 수평 방향으로 이동한다. 이동 방향은 `GetControlRotation().Yaw`에서 즉시 계산하며 캐릭터 회전 보간을 기다리지 않는다. 2026-11-06 조작감 변경(Codex 수행, 요청자 GitHub ID 확인 필요, 미커밋)으로 평상시 기울기는 WASD 입력을 계속 적분하는 방식에서 안전한 목표값을 따라가는 임계 감쇠 스프링으로 바뀌었다. 정규화 입력 × MaxBodyTilt × InputTiltLimitRatio(기본 0.35, 최대 0.5)가 목표다. 입력을 놓으면 목표가 0이 되어 자동으로 중심으로 복귀한다. BalanceReturnSpeed 기본 2/s이며 0.1~10 범위로 제한한다. 최대 1/120초 단위로 가속도 `(TargetTilt - BodyTilt) × Response² - 2 × Response × TiltVelocity`를 적분한다. TiltInputAcceleration, CounterTiltInputMultiplier, CounterTiltBraking, TiltGravityStrength, TiltDamping은 아래 불안정 상태에서만 사용한다. 이전 TiltSpeed/TiltRecoverySpeed/MaxTiltTime 필드는 현재 계산에서 사용하지 않는다. 전투 캐릭터 기본 MaxWalkSpeed는 275cm/s다. 충돌은 기존처럼 TiltVelocity에 충격을 더하며 실제 BodyTilt는 입력 목표 범위로 강제 제한하지 않는다. 어느 축이 MaxBodyTilt=60/35(약 1.714)에 도달하면 아래 표시 기울기·지상 유지 조건까지 확인해 넘어짐을 요청한다. 기본 입력만 유지할 때 목표 기울기는 0.6(메시 목표 약 21도)이고 넘어짐 한계는 약 60도다. 평상시의 자동 복귀가 충돌 직후까지 적용되지 않도록 아래 불안정 상태를 사용한다. 실제 충돌 강도는 플레이 조정이 필요하다. 30/60/120 FPS의 별도 수치 시뮬레이션에서 10초 입력 후 10초 해제 시 복귀와 한계 근처의 외부 충격에 의한 한계 초과를 확인했다. 게임 빌드·PIE 검증은 수행하지 않았다.
+
+2026-11-12 착지 시 조기 탈락 보완(Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋): 기존에는 내부 `BodyTilt`가 한계에 도달하면 보간된 화면 자세를 기다리지 않고 즉시 탈락했다. 이제 서버 보간 `VisualBodyTilt`를 복제하고 같은 축·방향에서 표시각이 한계 1도 이내에 도달해야 확인 시간을 누적한다. 후속 사용자 요청으로 0.2초 확인 타이머는 제거했다. 내부 한계와 표시 조건을 만족하고 지상이며 발사 대기가 없으면 즉시 `FallOver()`를 호출한다. 다음 자동 홉/차징 처리보다 탈락 검사를 먼저 수행한다. 한계 도달 시 균형 적분을 조기 종료하던 코드를 제거해 불안정 시간이 FPS에 따라 느리게 소진되는 경로도 수정했다. 각 포화 축의 바깥 방향 속도만 지우고 다른 축·역방향 회복은 보존한다. 명시적인 테스트 구역 탈락은 기존대로다. 실제 사용자 사례는 충돌/점프 후 착지 때 발생했으나 런타임 로그로 원인을 확정한 것은 아니다. 별도 30/60/120 FPS 수치 재현에서 표시각·공중/발사 제외·회복 취소·긴 프레임 제한·불안정 시간 소진을 검사했다. 실계정 멀티·네트워크 지연·AnimBP 재생은 미검증이며 패킷 손실/고지연에서 표시 도달 시점을 보장하지는 않는다.
+
+2026-11-12 자동 홉에 의한 탈락 누락 후속 수정(Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋): 앞선 지상 연속 확인 방식은 기본 0.3초 착지 회복 뒤 자동 홉이 먼저 실행되어 확인 시간이 초기화되는 문제가 있었다. 최근 로비 로그에서도 `BP_ChickenCharacter_C_2`가 Time=79.246에 한계 도달(FailureEnabled=1), 79.502에 착지, 79.801에 탈락 없이 자동 홉한 사례를 확인했다. 서버 표시 보간·탈락 검사를 자동 홉/차징 처리 앞으로 옮겼다. 이후 사용자 요청으로 확인 시간 누적과 그에 따른 자동 홉 대기는 제거하고, 각도 조건을 만족한 지상 프레임에서 바로 탈락하도록 바꿨다. 일반 착지 회복 시간(기본 최소 0.3초)은 유지하며 탈락 판정의 대기 시간으로 쓰지 않는다. 별도 30/60/120 FPS 회귀 수치 검사에서 이전 누락·수정 후 탈락·회복 취소·공중 사망 제외를 확인했다. 수정 후 빌드·로비 재시험·멀티플레이는 미검증이다.
 
 <a id="unstable-balance"></a>
 ### 강한 점프·충돌 뒤의 불안정 상태
 
-2026-11-06 변경: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 서버는 충전량이 `StrongJumpChargeThreshold`(기본 0.5) 이상인 방향 점프 또는 실제 충돌 반응 뒤 `UnstableBalanceDuration`(기본 2초) 동안 기존 누적 기울기 계산을 적용한다. 일반 자동 홉·제자리 점프·약한 차징 점프는 새 불안정 상태를 만들지 않는다. 강한 방향 점프는 발사 방향을 캐릭터 로컬 기울기 축으로 변환해 `StrongJumpTiltImpulse`(기본 1.2) × 정규화 충전량만큼 기울기 속도를 더한다. 충돌은 기존 충격량을 유지하며 양쪽 캐릭터가 불안정 상태에 들어간다. 충돌 쿨다운에서 거절된 접촉은 시간을 갱신하지 않는다.
+2026-11-06 변경: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 서버는 충전량이 `StrongJumpChargeThreshold`(기본 0.5) 이상인 방향 점프 또는 충돌의 지연 기울기 반응 뒤 `UnstableBalanceDuration`(기본 2초) 동안 기존 누적 기울기 계산을 적용한다. 일반 자동 홉·제자리 점프·약한 차징 점프는 새 불안정 상태를 만들지 않는다. 강한 방향 점프는 발사 방향을 캐릭터 로컬 기울기 축으로 변환해 `StrongJumpTiltImpulse`(기본 1.2) × 정규화 충전량만큼 기울기 속도를 더한다. 충돌은 기존 충격량을 유지하며 양쪽 캐릭터가 불안정 상태에 들어간다. 충돌 쿨다운에서 거절된 접촉은 시간을 갱신하지 않는다.
 
-불안정 상태에서는 입력 가속도(기본 3), 반대 입력 증폭(2배), 바깥쪽 관성 제동(6), 기울기 중력(2), 감쇠(1.5)를 사용하며 중심 자동 복귀는 중단한다. 재발생 시 남은 시간을 기본 지속 시간까지 갱신하고 시간을 누적하지 않는다. 타이머는 서버에서 계산 분할마다 감소하며 충전 시작·착지로 취소하지 않는다. 만료 후에는 현재 기울기·속도를 유지한 채 안정 스프링으로 돌아가므로 순간 자세 초기화나 무적 구간은 없다. 탈락·라운드 초기화·종료 시 타이머를 지운다. 클라이언트는 복제된 `BodyTilt`를 표시하며 타이머를 독립 계산하지 않는다.
+불안정 상태에서는 입력 가속도(기본 3), 반대 입력 증폭(2배), 바깥쪽 관성 제동(6), 기울기 중력(2), 감쇠(1.5)를 사용하며 중심 자동 복귀는 중단한다. 재발생 시 남은 시간을 기본 지속 시간까지 갱신하고 시간을 누적하지 않는다. 타이머는 서버에서 계산 분할마다 감소하며 충전 시작·착지로 취소하지 않는다. 만료 후에는 현재 기울기·속도를 유지한 채 안정 스프링으로 돌아가므로 순간 자세 초기화는 없다. 2026-11-10 공중 예외 처리 이후 기울기 한계에 따른 탈락은 지상에서만 판정한다. 탈락·라운드 초기화·종료 시 타이머를 지운다. 클라이언트는 서버가 보간해 복제한 `VisualBodyTilt`를 표시하며 불안정 타이머를 독립 계산하지 않는다.
 
 수치 계산에서 30/60/120 FPS 모두 평상시 10초 입력은 안전 목표 0.6에 머물렀고, 중립 자세에 1.2의 기울기 충격을 주면 약 1.81초에 한계를 넘었다. 짧은 반대 입력으로 버티는 사례와 약한 충격 뒤 복귀도 확인했다. 이는 별도 수치 시뮬레이션이며 실제 게임 충돌·네트워크·애니메이션 검증은 아니다.
 
 <a id="jump"></a>
 ## 차징 점프와 자동 홉
+2026-11-12 위험 HUD 추가(Codex 수행 · 미커밋): 실제 축별 탈락 한계보다 기본 10도 전부터 내 화면 외곽을 붉게 표시하고 탈락 시 즉시 끈다. 경고 폭은 `PlayerPresentation`에서 조절한다. [UI 구현과 설정](../UI/Overview.md#balance-danger-overlay).
+
+2026-11-10 점프 게이지 추가: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 로컬 캐릭터 오른쪽의 세로 막대가 기존 충전 상태·정규화 충전량을 표시한다. 게임 판정은 변경하지 않는다. [표시 조건과 구현](../UI/Overview.md#jump-charge-gauge).
+
+같은 날 후속 표시 변경(Codex 수행 · 미커밋): 내 Screen 게이지는 유지하고, 다른 플레이어는 카메라 앞·화면 안에 있을 때만 깊이 테스트를 받는 World 게이지로 표시한다. 충돌 없는 벽도 렌더링 깊이로 가림 처리하며 이름표와 충전/점프 판정은 변경하지 않는다.
+
+> 누르고 있기 입력 보완: 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+왼쪽 마우스/Space를 공중에서 누르기 시작해도 입력을 버리지 않고 서버에 누른 상태를 전달한다. 계속 누르고 착지하면 서버 Tick에서 자동 홉보다 먼저 충전을 시작한다. 공중에서는 충전량을 쌓거나 속도를 멈추지 않으며, 착지 전에 놓으면 대기를 취소한다. 충전 중 밀려 바닥을 벗어나면 기존 충전량은 지우되, 계속 누르고 있으면 다음 착지 때 새 충전을 시작한다. 반복된 누름 요청은 진행 중인 게이지를 초기화하지 않는다. 사망·라운드 초기화·종료에서는 누른 상태도 지운다. 서버 입력 전달·착지/해제 순서 정적 검토만 수행했으며 빌드·PIE는 미수행이다.
+
+> 차징 공격 보상·점프 높이 조정: 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+차징 점프는 기존 파워에 `ChargedJumpVerticalScale`(기본 1.15)을 곱한 수직 속도로 발사한다. 수평 속도·충전 시간·일반 자동 홉은 유지한다. 기존 Blueprint의 파워 오버라이드에도 별도 배율이 적용된다. 같은 중력에서 장애물 없는 점프의 이론상 최고 높이는 기존의 약 1.32배다.
+
+> 공중 예외 처리: 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+실제 게이지 충전과 발사는 지상에서만 허용하며, `LaunchCharacter`의 발사 속도가 대기 중인 프레임도 제외한다. 시작 조건을 속도 정지보다 먼저 검사하므로 공중에서 점프 입력을 반복해도 수직 속도를 멈추거나 다시 발사하지 않는다. 서버도 같은 조건을 검사하고, 충전 도중 지상을 벗어나면 충전량·조준을 취소한다. 누른 입력은 유지하므로 계속 누르고 착지하면 다시 충전한다.
+
+기울기 한계에 따른 `FallOver()`는 지상이고 발사 대기가 없을 때만 탈락을 요청한다. 공중에서도 기울기 계산과 한계 클램프는 유지하지만 탈락을 예약하지 않는다. 착지 뒤에도 내부 한계·서버 표시각 한계 근접(1도 이내)·현재 지상 조건을 만족해야 탈락한다. 테스트 구역 등의 명시적 `StartKnockdown()` 요청은 기존 동작을 유지한다. 이번 수정은 정적 검토만 수행했으며 빌드·PIE·다인 플레이는 미검증이다.
+
 > 차징 범위 조정: 2026-10-30 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 > 최근 기능 변경: 2026-10-02 · @sunsi-game (`7ed2786`, `2ee4755`), 서버 입력·상태 복제: @KyuminChung (`c8a7452`)
@@ -44,10 +70,22 @@
 
 JumpCharge(기본 SpaceBar 또는 LeftMouseButton)를 누르면 충전하고 놓으면 점프한다. 서버는 충전 시작·충전 중 Tick·발사 시 `RawTiltInput`의 WASD 입력을 정규화해 `JumpAim`에 저장한다. 방향키를 놓으면 마지막 조준을 유지하고, 새 충전에서는 초기화하므로 방향 입력 없이 충전하면 제자리 점프한다. 조준은 WASD 축 기준이며 발사 시 시점의 수평 방향(`GetControlRotation().Yaw`)으로 변환한다. 일반 이동과 같은 기준을 사용한다. 입력 Y의 부호에 맞춰 `-RightDir`를 사용한다. 대각선도 정규화해 직선보다 강해지지 않는다. 발사·탈락·라운드 상태 초기화 때 조준을 지운다.
 
-현재 작업 트리의 MinJumpPower 100, MaxJumpPower 400, ChargeRate 700이다. 충전 시작 시 파워는 100이고 약 0.429초 후 400에 도달한다. 이 파워 범위는 2026-11-05 작업 시작 전에 존재하던 미커밋 수정(작성자 확인 필요)을 보존한 값이며 BP 오버라이드는 미확인이다. 정규화 게이지는 이 범위를 0~1로 표시한다. 발사 속도는 수평 조준 방향 × 파워 × 0.95와 위쪽 방향 × 파워의 합이다. 방향 입력이 없으면 수평 성분은 0이다. `BodyTilt`는 점프 방향·높이에 관여하지 않는다. 충전 중에도 기울기 입력은 반영하지만 MoveForward/MoveRight의 AddMovementInput은 생략한다. 현재 StartJumpCharge는 상태 검사 전에 StopMovementImmediately와 입력 벡터 소비를 호출하므로 공중 수직 속도도 즉시 정지한다. 공중 재충전·발사 제한은 없다. 착지 후 `max(LandingRecoveryTime, MinimumLandingRecoveryTime)`만큼 회복한 뒤 자동 홉을 요청한다. 최소 회복의 새 기본값은 0.3초이며 충전·넘어짐·라운드 입력 잠금은 자동 홉을 억제한다. 서버가 차징·홉을 처리하고 TakeoffSerial 등 표현 상태를 복제한다. 조준은 기존 Reliable 입력 RPC를 통해 서버에서 계산하며 별도 복제하지 않는다. 변경 후 빌드·PIE·멀티플레이 조작감은 미검증이다.
+현재 작업 트리의 MinJumpPower 100, MaxJumpPower 400, ChargeRate 700이다. 충전 시작 시 파워는 100이고 약 0.429초 후 400에 도달한다. 이 파워 범위는 2026-11-05 작업 시작 전에 존재하던 미커밋 수정(작성자 확인 필요)을 보존한 값이며 BP 오버라이드는 미확인이다. 정규화 게이지는 이 범위를 0~1로 표시한다. 발사 속도는 수평 조준 방향 × 파워 × 0.95와 위쪽 방향 × 파워 × ChargedJumpVerticalScale(기본 1.15)의 합이다. 방향 입력이 없으면 수평 성분은 0이다. `BodyTilt`는 점프 방향·높이에 관여하지 않는다. 충전 중에도 기울기 입력은 반영하지만 MoveForward/MoveRight의 AddMovementInput은 생략한다. StartJumpCharge는 상태·지상·발사 대기를 검사한 뒤 StopMovementImmediately와 입력 벡터 소비를 호출한다. 공중 재충전·발사는 허용하지 않는다. 착지 후 `max(LandingRecoveryTime, MinimumLandingRecoveryTime)`만큼 회복한 뒤 자동 홉을 요청한다. 최소 회복의 새 기본값은 0.3초이며 충전·넘어짐·라운드 입력 잠금은 자동 홉을 억제한다. 서버가 차징·홉을 처리하고 TakeoffSerial 등 표현 상태를 복제한다. 조준은 기존 Reliable 입력 RPC를 통해 서버에서 계산하며 별도 복제하지 않는다. 변경 후 빌드·PIE·멀티플레이 조작감은 미검증이다.
 
+<a id="background-music"></a>
+## 로비·라운드 공통 배경음
+
+2026-11-12 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+
+UCFBackgroundMusicSubsystem은 GameInstance마다 하나의 로컬 2D 음악 스트림을 관리한다. L_Lobby_Playground와 L_Round1~L_Round4에서 동일한 밝은 아케이드풍 자작 곡(120 BPM, 8마디, 16초)을 반복한다. 멜로디·코드·베이스·드럼을 24kHz/16bit 모노 PCM으로 생성하므로 별도 음원 에셋·외부 파일의 cook 설정이 필요 없다. 전용 서버에서는 생성/재생하지 않으며 타이틀 등 대상 외 맵과 GameInstance 종료에서 정리한다.
+
+소유 액터 없는 SpawnSound2D에 레벨 전환 유지 옵션을 주고, Tick에서 버퍼를 미리 보충한다. 대상 맵끼리 이동할 때 같은 컴포넌트를 재사용한다. UCFLobbySubsystem::MusicVolume에 기본 배율 0.35를 곱해 BG 슬라이더·저장값을 직접 반영한다. 로비 SoundMix의 음악 클래스 배율을 중복 적용하지 않으며 0 볼륨에서도 스트림을 유지해 다시 올릴 수 있다. 코드는 Source/DKUEndGame/Character/CFBackgroundMusicSubsystem.h/.cpp다.
+
+확인: 별도 JS 수치 재현으로 384,000개 샘플의 유효값·피크 약 0.708(클리핑 없음)·반복 양끝 0을 검사했다. 이는 엔진 재생 검증이 아니다. 빌드·PIE·맵 전환 오디오 유지·BG 0→복구·실제 커서 조작은 미검증이다. API 참고: [Procedural Wave](https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/USoundWaveProcedural), [Spawn Sound 2D](https://dev.epicgames.com/documentation/unreal-engine/BlueprintAPI/Audio/SpawnSound2D).
 <a id="combat-audio"></a>
 ## 닭싸움 효과음
+
+2026-11-12 게임 소리 연결(Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋): 기존 로비 VFX/효과음 슬라이더의 `EffectsVolume`을 모든 캐릭터 효과음(홉·차징·발사·착지·충돌)의 `MasterVolume × 이벤트 음량`에 직접 곱한다. 이미 재생 중인 음성도 매 Tick 반영하며 저장값은 로비와 라운드에 공통 적용된다. 기존 로비 전용 EffectsClass SoundMix 배율 적용은 제거해 교체 음원에도 중복 배율이 걸리지 않게 했다. 배경음 볼륨은 별도이며 효과음 0/0.5/1 배율 계산을 확인했다. 에셋에 표시된 VFX 라벨은 유지하고 툴팁은 게임 소리 대상 목록으로 보완했다. 빌드·실제 슬라이더 조작 및 재생은 미검증이다.
 
 > 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
@@ -62,28 +100,45 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 <a id="knockdown"></a>
 ## 넘어짐과 충돌
 
+2026-11-10 차징 공격 보상 조정: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 서버가 차징 발사 시 정규화 충전량과 발사 방향을 저장한다. 공중에서 상대를 향해 이동하며 부딪힌 첫 유효 충돌에 `MaxChargedCollisionBonus`(기본 400cm/s) × 충전량 × 발사 방향과 상대 방향의 일치도를 상대에게 가하는 수평 충격에 더한다. 정면 최대 충전은 +400cm/s, 반충전은 +200cm/s이며 비스듬한 접촉은 줄어든다. 자기 공격의 추가 힘을 자기 반동에 더하지 않으며, 양쪽이 공격하면 서로의 보너스를 각각 받는다. 기존 접근 속도 문턱·쌍별 쿨다운·기본 충격 상한은 유지하고 보너스는 기본 충격 상한 적용 후 더한다. 착지·첫 유효 충돌·넘어짐·라운드 초기화/종료에서 보너스를 소진한다. 자동 홉·뒤에서 맞는 접촉·착지 후 충돌에는 추가 공격 보너스가 없다. 수직 반동과 기울기 충격은 기존 비율·상한으로 계산한다. 수치·서버 경로 정적 검토만 수행했으며 실전 밸런스·빌드·PIE는 미검증이다.
+
+2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋: 연습 로비에서만 사망 후 R키로 부활할 수 있다. 새 Pawn을 최초 등장 위치에 생성해 상태를 초기화하며 경기 중 부활은 허용하지 않는다. [로비 부활 구현과 제한](../UI/Lobby.md#로비에서-r키-부활).
+
 > 최근 기능 변경: 2026-10-02 · 충돌: @sunsi-game (`7ed2786`, `2ee4755`), 탈락·관전: @KyuminChung (`60d0b2f`)
 
 `StartKnockdown`은 서버에서 상태 중복·입력 잠금을 검사하고 아레나의 생존자 목록을 갱신한다. 충전·회복·기울기를 정리하며 지상은 즉시 넘어짐, 공중은 수평 속도를 멈추고 중력을 유지하여 착지 후 넘어짐. 방향과 상태를 복제하며 아레나에서는 1.6초 후 캐릭터 제거·고정 관전으로 전환한다. 독립 테스트에서는 자세를 유지한다. R 초기화는 전용 테스트 GameMode/HUD가 필요하며 현재 dev 맵은 해당 설정과 4구역을 제거한 상태다.
 
 충돌 반응·이동·점프·탈락 한계 변경: 2026-10-30 · Codex 수행, 요청자 GitHub ID 확인 필요 · 미커밋.
 
-서버의 MoveBlockedBy에서 이동 속도의 슬라이드·굴절 보정 전 OnChickenHit의 공통 충돌 처리를 호출한다. 기존 캡슐 OnComponentHit도 유지하며 두 경로는 같은 쌍별 쿨다운을 사용해 중복 충격을 막는다. 지연된 캡슐 콜백에서 이미 줄어든 속도 때문에 접근 속도 조건을 통과하지 못하는 경로를 보완했다. OnChickenHit는 두 생존자의 상태·상대 캡슐·쌍별 쿨다운을 검사한다. 중심 간 수평 방향으로 상대속도를 투영한 접근 속도가 30cm/s 이상이면, 접근 속도 × 0.8(최대 600cm/s)의 수평 속도 변화를 양쪽에 반대 방향으로 적용한다. 이탈·스침처럼 접근 속도가 부족한 접촉은 제외한다. 수직 속도 변화는 각 캐릭터의 수평 충격 크기 × 0.35(최대 200cm/s)다. AddImpulse의 질량 무시 모드를 사용하며 착지 회복을 해제해 충돌 직후 자동 홉이 겹치지 않게 한다. 충전 상태는 유지한다. 같은 쌍의 중복 충격은 기본 0.2초 동안 막는다.
+서버의 MoveBlockedBy에서 이동 속도의 슬라이드·굴절 보정 전 OnChickenHit의 공통 충돌 처리를 호출한다. 기존 캡슐 OnComponentHit도 유지하며 두 경로는 같은 쌍별 쿨다운을 사용해 중복 충격을 막는다. 지연된 캡슐 콜백에서 이미 줄어든 속도 때문에 접근 속도 조건을 통과하지 못하는 경로를 보완했다. OnChickenHit는 두 생존자의 상태·상대 캡슐·쌍별 쿨다운을 검사한다. 중심 간 수평 방향으로 상대속도를 투영한 접근 속도가 30cm/s 이상이면, 기본 충격은 접근 속도 × 0.8(최대 600cm/s)의 수평 속도 변화를 양쪽에 반대 방향으로 적용한다. 차징 공격은 위의 추가 밀침을 상대에게 더한다. 이탈·스침처럼 접근 속도가 부족한 접촉은 제외한다. 수직 속도 변화는 각 캐릭터의 수평 충격 크기 × 0.35(최대 200cm/s)다. AddImpulse의 질량 무시 모드를 사용하며 착지 회복을 해제해 충돌 직후 자동 홉이 겹치지 않게 한다. 충전 상태는 유지한다. 같은 쌍의 중복 충격은 기본 0.2초 동안 막는다.
 
-충격을 각 캐릭터의 로컬 균형 좌표로 변환해 `TiltVelocity`에 더한다(속도 변화 × 0.004, 충격당 최대 1.2). BodyTilt를 즉시 꺾지 않고 기울기 속도를 누적한 뒤 전체 메시를 보간해 밀린 방향으로 서서히 쏠리게 한다. 바닥 법선을 이용한 기울기 계산은 추가하지 않았다. 충돌 자체는 탈락시키지 않으며, 기존 균형 계산에서 한계를 넘을 때만 `FallOver()`가 `StartKnockdown()`을 호출한다. 반대 방향 입력으로 버틸 수 있고 넘어짐 방향은 현재 `BodyTilt`의 우세 축으로 결정한다. `Chicken|Collision` 기본값은 플레이 조정용 초기값이며 실제 2인 플레이·지연 환경 검증은 아직 수행하지 않았다.
+2026-11-12 변경(Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋): 밀림은 즉시 적용하고, 각 유효 충돌의 기울기 충격은 `CollisionTiltDelay`(기본 0.4초, 실효 범위 0.3~0.5초) 뒤 서버 Tick에서 적용한다. 충격 방향을 월드 좌표로 보관한 뒤 적용 시점에 각 캐릭터의 로컬 균형 좌표로 변환해 `TiltVelocity`에 더한다(속도 변화 × 0.004, 충격당 최대 1.2). BodyTilt를 즉시 꺾지 않고 기울기 속도를 누적한 뒤 전체 메시를 보간해 밀린 방향으로 서서히 쏠리게 한다. 같은 시점에 `CollisionUpperBodyTilt`를 복제해 기존 AnimBP용 `CurrentTilt`에 피격 방향을 더하고 각 축을 ±1로 제한한다. 상체 목표는 0.5초 유지한 뒤 기존 보간으로 입력 자세에 복귀한다. 반대 입력으로 반응을 상쇄할 수 있다. 연속 피격은 개별 예약하며 탈락·라운드 초기화/종료에서 예약과 상체 반응을 지운다. 불안정 상태도 지연 충격 적용 시 시작한다. 클라이언트에는 복제 지연이 추가되므로 실제 표시 시점은 네트워크 시험이 필요하다. 바닥 법선을 이용한 기울기 계산은 추가하지 않았다. 충돌 자체는 탈락시키지 않으며, 기존 균형 계산에서 한계를 넘을 때만 `FallOver()`가 `StartKnockdown()`을 호출한다. 반대 방향 입력으로 버틸 수 있고 넘어짐 방향은 현재 `BodyTilt`의 우세 축으로 결정한다. `Chicken|Collision` 기본값은 플레이 조정용 초기값이며 실제 2인 플레이·지연 환경 검증은 아직 수행하지 않았다.
 - 코드: `Source/DKUEndGame/Character/ChickenCharacter.h/.cpp`. 이번 변경은 C++ 정적 검토만 수행했다. `Content/Characters/BP_ChickenCharacter.uasset`의 별도 기본값 오버라이드와 실제 2인 플레이는 미확인이다.
 - 표현·시험 맵: [4방향 넘어짐 상세](../Animation/DirectionalKnockdown.md).
 
 <a id="match"></a>
 ## 경기 상태와 라운드
+
+- 2026-11-12(Codex 수행 · 미커밋): 새 놀이동산 배치의 `L_Round4`에 편집용 닭 4명의 현재 위치·방향과 일치하는 `CF_RoundSpawn_01~04`를 추가했다. `ArenaSpawn`/`CFLinkedRoundSpawn` 태그와 미리보기의 `CFRoundSpawnPreview`·클라이언트 로드 제외를 연결했다. 기존 배치·GameMode·기믹 설정은 보존한다. [설정과 검증](RoundGameplaySetup.md#round4-spawn-restore).
+
+- 2026-11-10(Codex 수행 · 미커밋): `L_Round2`에 남아 있던 단독 테스트 모드를 정식 `CFRoundGameMode`로 복구했다. GameMode Override만 변경하고 액터 817개 배치·태그와 다른 라운드 파일을 보존했으며 저장 후 별도 Editor 재로딩을 확인했다. 기존 EOS 수동 대기 창 차단은 유지한다. 실제 4PC 전환 재시험은 남아 있다. [설정·복구 기록](RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
 > 최근 기능 변경: 2026-10-02 · @KyuminChung (`c8a7452`, `60d0b2f`, `99aeaf1`)
 
 정원 4명·최소 2명, 호스트 시작 → 3초 카운트다운 → 경기 → 결과 6초를 4R까지 진행한다. 서버가 참가자·생존자·탈락 순서·5/3/1/0점·누적 점수를 관리한다. 최후 1인 승리, 동시 마지막 탈락은 무승부·공동 순위다. 최종 누적 순위·MVP를 표시한 뒤 호스트가 같은 연결을 유지하며 전원을 걷기 대기로 돌려보낼 수 있다. 새 경기는 1R·0점으로 초기화한다.
 - 상태 소유자: `ACFWaitingGameMode`, 복제: `ACFWaitingGameState`, 소유 플레이어 입력·관전: `ACFWaitingPlayerController`.
+- 2026-11-10(Codex 수행 · 미커밋): 매 라운드 결과의 행 순서와 표시 순위를 누적 점수 기준으로 통일했다. 누적 동점은 공동 순위이며, 점수 지급용 라운드 순위·이번 점수·승자 안내·최종 MVP는 보존한다. [표시 규칙](../RoundProgression.md#현재-점수-규칙).
 - 상세: [경기 시작](../MatchStart.md), [탈락·관전](../RoundEnd.md), [점수·라운드](../RoundProgression.md), [최종 결과·복귀](../FinalResults.md).
+- 2026-11-08: 최신 dev의 네 라운드 배치를 작업 브랜치에 반영하고 [배치 캐릭터 기반 스폰 연결 도구](RoundSpawns.md)를 Unreal 5.8.4 Editor에서 적용했다. 네 맵의 `ArenaSpawn` 4개씩 저장·재로딩과 원본 캐릭터/GameMode 보존을 확인했다. 경기 GameMode 연결·배치 테스트 캐릭터 처리·실제 4인 스폰·라운드별 맵 전환은 후속 작업이다.
+- 후속 [경기 준비 GameMode와 적용 도구](RoundGameplaySetup.md)는 Unreal 5.8.4에서 정식 빌드하고 네 맵에 적용했다. 최소 4인, 미리보기의 서버 정리·클라이언트 로드 제외, 스폰 예약을 제공한다. 같은 프로세스의 Listen Server/PIE 클라이언트로 네 맵 모두 3인 시작 거절과 4인 생성·소유·전투 Pawn 교체·첫 카운트다운 복제를 확인했다. 서버의 시작 XY·시점 Yaw도 확인했다. 전체 경기·입력/렌더링·EOS 입장·라운드별 맵 전환은 별도다.
+
+2026-11-08 후속 코드: 배정된 EOS Round1에서는 명단 검사와 서버의 실제 4인 준비 확인 후 자동 카운트다운하도록 연결했다. 일반 LAN/맵 직접 실행은 기존 수동 시작을 유지한다. 새 Editor 빌드·실계정 4PC 검증은 아직 수행하지 않았으며 다음 맵 이동은 포함하지 않는다. [EOS Round1 연결](../Network/EOSRound1Session.md).
+
+2026-11-09 후속 코드: [플레이어 식별과 네 맵 랜덤 경기](MatchPresentationAndTravel.md)를 추가했다. 서버가 맵·색상 순서를 정하고 Seamless Travel 시 점수/이름/PlayerId를 복구한다. 캐릭터 이름표, 복제 색상 슬롯, 걷기 준비 숨김, 4인 결과 수신 확인 후 정상 종료와 개인별 결과 유지·복귀를 연결했다. UE 5.8.4 Editor 정식 빌드 후 기존 캐릭터 Material Instance에 프로젝트 전용 Tint 부모를 연결·저장하고 원본 보존·재로딩·동적 색상 설정을 확인했다. Tint 보호 검사 9개 통과. 사용자 4인 경기 시작 확인 후 첫 맵 이동에서 발생한 HUD 크래시를 수정했다. 현재 LocalPlayer 소유권이 복구될 때까지 갱신을 보류하며 위젯 생성 실패를 처리한다. 정식 재빌드와 소유권 회귀 검사를 포함한 MatchRounds native 검사 3개 통과. 실제 렌더링·수정 후 다중 맵 흐름의 4PC 검증은 남아 있다.
 
 <a id="debug-logging"></a>
 ## 디버깅 로그
+
+- 2026-11-10(Codex 수행 · 미커밋): `ACFKnockdownTestHUD`의 화면 안내 패널(테스트 제목·WASD/마우스/R 설명·넘어짐 상태)을 제거했다. 실제 조작과 `R` 리셋은 유지하며 FPS/GPU/VSM 진단 출력과 별개다. [Round2 임시 테스트](RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
 > 최근 기능 변경: 2026-10-23 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 충돌·기울기·이동을 LogChickenCollision, LogChickenTilt, LogChickenMovement로 분리했다. Actor·World·프레임·시간·네트워크 역할을 공통 출력한다. 사건 로그는 기본 활성화하고 매 이동 갱신·균형 계산·반복 접촉 로그는 기본 비활성화한다. cf.Debug.Events와 cf.Debug.Frames로 제어한다. 밀치기 요청값과 이후 관측 속도를 구분하며 기존 물리 계산과 게임플레이 상태 전환은 유지한다.
@@ -91,14 +146,28 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 <a id="ld-moving-obstacles"></a>
 ## LD_Gym 이동 발판
-> 최근 기능 변경: 2026-11-01 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+> 최근 기능 변경: 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 `Content/LD_Gym/Levels/LevelPrototyping/Obstacles/`의 `BP_PhysicsObstacle_MovingPlatform`과 `BP_PhysicsObstacle_TurnTable`은 `BP_KinematicObstacle`을 부모로 사용한다. 새 부모는 Movable Root만 제공하며 Mover 플러그인에 의존하지 않는다. 기존 부모 `BP_PhysicsObstacle`의 저장되지 않은 편집은 보존했고, 그 부모의 Mover 오류 자체를 복구한 것은 아니다.
 
 - 상하 발판: `VerticalMovement` (`InterpToMovementComponent`)의 상대 Control Points `(0,0,0)` → `(0,0,300)`, Duration 3초, Behaviour Type `PingPong`. 기본 자세에서 300cm 위까지 편도 3초·왕복 6초로 반복한다. 이동 중 경로 충돌 Sweep은 끄고, 발판 메시의 충돌은 유지한다.
+- 끝점 대기: `BP_PhysicsObstacle_MovingPlatform`에 `EndpointPause` (`UMovingPlatformEndpointPauseComponent`)를 추가했다. 배치 액터의 Details 상단에서 이 컴포넌트를 선택하고 `Platform → Endpoint Pause`의 `Top Wait Seconds`·`Bottom Wait Seconds`를 초 단위로 조절한다. 각각 기본 0초로 기존 동작을 유지하며, 양 끝점에 도착한 뒤에만 대기한다(시작 직후 대기 없음). 수직 방향을 뒤집어도 월드 높이로 위/아래를 구분한다. 이동 시간은 기존 `VerticalMovement.Duration`이며 대기 시간을 포함하지 않는다. 기본 경로의 왕복 시간은 `2 × Duration + Top Wait Seconds + Bottom Wait Seconds`다.
+- 구현은 기존 이동 컴포넌트의 끝점 반전 이벤트를 사용한다. `PingPong`의 경로 양 끝에서만 활성 플래그·틱을 잠시 중지하고 월드 타이머로 재개하여 경로 시간·방향을 보존한다. 중간 충돌 반전은 대기하지 않는다. 종료 시 타이머와 이벤트 연결을 정리한다. 적용 도구는 `Tools/Editor/add_moving_platform_endpoint_pause.py`이며 기존 컴포넌트·경로·Duration·Sweep 설정을 보존하고 BP만 저장한다. 별도의 서버 권한 이동 복제는 추가하지 않는다.
+- 2026-11-10 확인: Unreal 5.8.2 Editor 빌드 성공, BP 저장 후 별도 Editor에서 다시 로드하여 Round2의 실제 PIE 월드에서 10초 검사했다. 테스트용 발판의 위 1초/아래 0.6초 대기·재개, 방향을 뒤집은 위 0.75초/아래 0.35초, 양쪽 0초 연속 왕복을 확인했다. 반복 구간의 위치 샘플에서 정지 길이는 샘플 간격 한 프레임 이내로 설정값과 일치했다. 자료는 `Saved/MovingPlatformPause/runtime.json`·`verified.json`이다. 임시 테스트 액터와 검사 수치는 맵에 저장하지 않았다. 탑승·다른 PC 간 동기화·패키징은 이번 검사 범위 밖이다.
 - 회전 발판: `TurntableMovement` (`RotatingMovementComponent`)의 Rotation Rate `(Pitch=0, Yaw=45, Roll=0)`, 로컬 축 기준 초당 45도·한 바퀴 8초. 공전이 아니라 발판 중심의 자전이다.
 - 두 컴포넌트는 Auto Activate를 사용한다. 기존 메시·머티리얼·스케일·에셋 경로를 유지하며, 메시의 Simulate Physics는 꺼진 상태다. 이동 범위·시간·회전 속도는 각 Blueprint의 해당 컴포넌트에서 조절한다.
 - 확인 범위: 부모·자식 Blueprint 컴파일과 개별 저장, 설정 재조회, 메시 표시 및 배치된 상하 발판의 Root→Platform 연결 확인. PIE·캐릭터 탑승·멀티플레이 동기화는 미검증이며 서버 권한 기반 이동 복제는 추가하지 않았다.
+
+<a id="ld-bumper-launch"></a>
+## LD_Gym 범퍼 캐릭터 발사
+> 최근 기능 변경: 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+`Content/LD_Gym/Levels/LevelPrototyping/Obstacles/BP_SimpleObstacle_Bumper`의 기존 트리거는 판의 타임라인을 재생하며 캐릭터를 직접 발사하지 않았다. `CharacterLauncher` (`UBumperCharacterLaunchComponent`)를 추가하여 실제 `Bumper` 메시가 상승하는 동안 윗면에 닿은 `ACharacter`에 서버가 `LaunchCharacter`를 호출한다. 수평 속도는 유지하고 수직 속도만 지정한다. 같은 상승 구간에서 같은 캐릭터는 한 번만 발사하며, 범퍼 아래·멀리 떨어진 캐릭터와 이동 모드가 `None`인 캐릭터는 제외한다.
+
+- 배치 액터 Details의 `CharacterLauncher → Bumper → Launch → Launch Speed`로 상향 속도를 조절한다. 기본 900cm/s, 0이면 발사하지 않는다. 고급 `Surface Tolerance`는 윗면 발 접촉 허용 범위(기본 45cm)다.
+- 판의 `Duration`·`Location`·곡선·트리거·메시·기존 충돌은 보존한다. 발사 검사는 물리 처리 뒤의 판 상승을 사용하며 트리거 반복 횟수나 클라이언트 요청에 의존하지 않는다. 기존 CharacterMovement 이동 복제를 사용하며 새 RPC는 추가하지 않는다.
+- 적용 도구: `Tools/Editor/add_bumper_character_launch.py`. BP만 저장하고 기존 기본값·컴포넌트 변환·메시·충돌 설정의 보존을 비교한다. 변경 전 사본과 적용 자료는 `Saved/BumperLaunch/`에 둔다.
+- 확인: Unreal 5.8.2 Editor 빌드·BP 저장/별도 로딩 성공. Round2의 실제 PIE 월드에서 검사 전용 범퍼와 `BP_ChickenCharacter`를 사용한 5초 검사로, 기본 900cm/s에서 최대 상향 속도 약 883.7cm/s·시작 높이 대비 약 437.6cm 상승을 확인했다. 범퍼 밖 캐릭터와 Launch Speed 0인 비교 범퍼에서는 상향 발사가 없었다. 검사 액터·수치는 맵에 저장하지 않았다. `Saved/BumperLaunch/runtime.json`·`verified.json`에 자료를 둔다. 별도 PC/EOS·원격 클라이언트 동기화·패키징은 미검증이다.
 
 <a id="ld-window-glass"></a>
 ## LD_Gym 유리창 에셋
@@ -151,6 +220,8 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 <a id="round1-sparring-ring"></a>
 ## Round1 도심 스파링장 크기 조정
 
+- 2026-11-13 · Codex 수행 · 미커밋: `L_Round1`의 `Ring_Rope`와 `Cube35` 바깥 테두리 사이에 `R1_RingBoundary_West/East/South/North` Blocking Volume 4개를 추가했다. 아웃라이너 `Space/Arena/InvisibleBoundary`에서 각 면을 편집한다. 두께 12cm, 하단 Z=200cm·상단 Z=1220cm(링 바닥 위 10m)이며 모서리를 연결해 플레이어 이탈을 막는다. Pawn만 Block하고 Camera 등 나머지 채널은 Ignore한다. 게임 중 숨김·그림자·오버랩 이벤트 제외이며 투명 재질/메시 에셋은 추가하지 않았다. 기존 98개 액터 배치·GameMode·네 시작 위치는 보존했다. 저장 후 재로딩과 캡슐 충돌 60곳, 로컬 4인 전투 시작, 높이 700/1120cm에서 실제 캐릭터의 네 방향 벽 차단 8회를 확인했다. 백업·검증은 `Saved/Round1Boundary/`에 있다.
+
 > 최근 구성 변경: 2026-11-08 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 `Content/Map/L_Round1.umap`의 중앙 링을 4인 교전 공간 확보를 위해 12×12m에서 16×16m로 확대했다. 바닥 면적은 144㎡에서 256㎡로 약 78% 늘었다. 기존 중심 (50, 590)cm와 보행면 높이 220cm를 유지한다. 위의 `L_TestJS` 원본과 구분한다.
@@ -202,7 +273,7 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 > 최근 구성 변경: 2026-11-08 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
-`Content/Map/L_Round3.umap`은 장애물 사이를 자유롭게 왕복하며 최후 1인 생존 전투를 검토하는 32m 정방형 그레이박스다. 네 사분면에서 중앙을 바라보고 출발한다. 중앙 높이 120cm의 교전장과 네 방향 경사로·외곽 순환 바닥, 양쪽 2층과 중앙의 긴 다리를 연결했다. 출발/결승선·진행 방향·의무 통과 순서는 없다. 테마는 미정이다.
+`Content/Map/L_Round3.umap`은 장애물 사이를 자유롭게 왕복하며 최후 1인 생존 전투를 검토하는 아레나다. 아래 수치는 2026-11-08의 32m 정방형 그레이박스 제작 당시 기준이며, 이후 사용자 편집본의 바닥 크기·경사로와 기믹 변환은 별도로 유지한다. 네 사분면에서 중앙을 바라보고 출발하며 양쪽 2층과 중앙의 긴 다리를 연결한다. 출발/결승선·진행 방향·의무 통과 순서는 없다. 2026-11-11 댐 정비장 테마를 적용했다.
 
 - 이동 리듬: 기존 44m 폭을 32m로 압축했다. 실제 `BP_ChickenCharacter` 기본 이동속도 275cm/s 기준 직선 한 변은 16초에서 약 11.6초, 평지의 주요 이벤트 간격 550~750cm는 약 2~2.7초다. 가속·점프·충돌·우회 시간을 제외한 거리/속도 추정치이며 실전 이동 시간 측정은 아니다. 사용자 배치 캐릭터의 XY·크기와 네 시작점의 단위 스케일을 유지했다. 다리 위 테스트 캐릭터의 Z는 높아진 보행면에 맞췄다.
 - 양쪽 2층: 높이 600cm, 각 700×1400cm다. 다리와 함께 기존보다 150cm 높였다. 각 층에 계단과 반대편 경사로를 하나씩 두어 양쪽으로 오르내린다. 계단 20단의 단높이 30cm는 캐릭터 최대 보행 단차 45cm보다 작다. 경사로는 수평 750cm에 600cm를 오른다(약 38.7도). 다리 아래 중앙 발판도 계속 교전·왕복 공간으로 쓴다.
@@ -210,12 +281,48 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 - 아래층은 구덩이·복귀 경사로·작은 흔들 발판, 회전판, 왕복 구체/추, 수직 왕복 낙하물과 회피 공간을 유지했다. 기존 장식 통나무와 상시 점프대 2개는 교체했다. 양쪽 통나무는 길이 320cm·지름 90cm·질량 35kg의 물리 원기둥이다. `BP_R3_LogSpawner`가 각 경사로 위에서 하나씩 생성하며, 중심 Z가 65cm 이하로 내려오면 제거하고 2초 후 새 액터를 생성한다. 끼인 통나무도 12초 후 제거한다. 서버에서만 생성·제거하고 생성한 통나무의 물리 이동을 복제한다. 수명·재생성 대기·제거 높이·질량은 스포너의 `Log` 설정으로 조절한다. 구현은 `Source/DKUEndGame/Gameplay/Round3LogSpawner.h/.cpp`다.
 - 다리 아래 회전판: 기존 북동쪽 회전판을 중앙의 `R3M_Sweeper`로 교체했다. 중앙 교전장 위 지름 900cm·상면 높이 140cm의 원판에 길이 800cm·두께 45cm의 막대와 중심축을 붙여 초당 30도(12초에 한 바퀴)로 함께 회전한다. 막대 중심 높이는 210cm이며 개별 부착 액터로 편집한다. 회전 범위에 있던 엄폐물 2개는 북동쪽으로 옮겼다. `RotatingMovementComponent`를 쓰는 충돌 가능한 운동 장애물이며 별도의 넘어짐 판정은 추가하지 않았다.
 - 주기 물줄기 3개: 각 5.2초·6.4초·7.6초 주기로 바닥 아래 600cm에서 오르내린다. 충돌 없는 파란 반투명 기둥이 임시 물 표현이고, 상승한 오버랩 영역에 닿은 캐릭터를 위로 900cm/s 발사한다. `BP_R3_JetLauncher`는 기존 네이티브 `SideScrollingJumpPad`를 상속해 `LaunchCharacter`를 사용한다. 기존 공유 `BP_JumpPad`의 물리 속도 방식은 현재 캐릭터 발사에 적용되지 않아 재사용하지 않았다. 실제 유체·Niagara 효과는 후속 범위다.
-- 편집: 기존은 `Round3Arena/`, 추가분은 `Round3Layers/` 폴더의 독립 액터다. 새 Blueprint `BP_R3_UpperBridgeMotion`, `BP_R3_JetCycle_0~2`, `BP_R3_JetLauncher`, `BP_R3_Sweeper`, `BP_R3_LogSpawner`와 재질 3개는 `/Game/Map/Round3Draft/` 아래에 있다. 움직임의 제어점은 Blueprint 컴포넌트 기본값에 저장하고, 자식 액터는 네이티브 루트에 부착해 재로딩 시 변환 초기화를 피한다. 다리 발판은 절대 스케일을 사용한다.
+- 편집: 기존은 `Round3Arena/`, 추가분은 `Round3Layers/` 폴더의 독립 액터다. 현재 사용하는 Blueprint 10개(그중 `BP_R3_UpperBridgeMotion`, `BP_R3_JetCycle_0~2`, `BP_R3_JetLauncher`, `BP_R3_Sweeper`, `BP_R3_LogSpawner`)와 하늘 재질 `M_R3_PreviewSky`는 `/Game/LD_Gym/LDProps/StaticMeshes/Round3/`에 있다. 2026-11-15 Codex가 언리얼 콘텐츠 브라우저의 Move Here로 이동하고 `L_Round3` 참조를 갱신했다. 기존 경로는 호환용 리다이렉터를 유지하며, 미사용 초안 BP·재질과 `Round4Draft`의 미사용 BP 2개는 원래 위치에 남긴다. 움직임의 제어점은 Blueprint 컴포넌트 기본값에 저장하고, 자식 액터는 네이티브 루트에 부착해 재로딩 시 변환 초기화를 피한다. 다리 발판은 절대 스케일을 사용한다.
 - 기존 테스트 GameMode·공유 Blueprint·캐릭터 코드는 유지했다. 네트워크, 승자 판정, 장애물 충돌에 따른 넘어짐 강도는 이번 공간 초안의 검증 범위가 아니다. 캐릭터 충돌 넘어짐 코드는 다른 캐릭터와의 충돌을 대상으로 하므로 일반 물리 통나무 접촉이 같은 넘어짐 판정을 보장하지 않는다.
 - 적용 도구: `Tools/Editor/upgrade_round3_layered_arena.py`는 기존 아레나에 한 번 적용하는 도구이며 `R3L_*`가 있으면 중단한다. 후속 도구 `Tools/Editor/revise_round3_bridge_and_logs.py`는 높이·회전판·통나무 스포너 변경을 한 번 적용하며 `R3M_*`가 있으면 중단한다. 후속 적용 전 사용자 수정 상태는 `Saved/Round3Revision/before_20261108_025308.umap` 및 `before_apply_*.umap`에 백업했다. 초기 적용 전 로컬 백업은 `Saved/Round3Layers/L_Round3_before_layers_20261108_022155.umap`이다. 이전 `rebuild_round3_arena.py`·`build_round3_draft.py`는 과거 배치용으로 현재 맵을 재생성하지 않는다. 과거 코스 백업은 `Saved/Round3Work/L_Round3_race_before_arena.umap`에 보존했다.
 - 초기 확인(높이 450cm였을 때): 저장·재로딩 후 시작점 4곳·다리 발판 12개·분수 부착/주기와 사용자 캐릭터 보존, 주요 보행면 13곳의 충돌, 다리 아래 지름 68cm·높이 176cm 캡슐 통과를 검사했다. 약 9초의 에디터 시뮬레이션에서 다리/분수 왕복, 양쪽 통나무가 경사 아래로 약 6~7m 이동한 것을 기록했다. 테스트 캐릭터는 시뮬레이션에서 무컨트롤러 물리를 활성화해 분수 접촉 후 상향 속도 약 887cm/s와 캡슐 중심 높이 약 558cm까지 상승했다. 이는 입력을 포함한 경기 검증은 아니다. `Saved/Round3Layers/overview.png`·`bridge.png`는 분수의 최고 위치를 임시로 보여준 캡처이며 저장된 초기 위치는 바닥 아래다. 4인 경기·다리 횡단 감각·밸런스·패키징은 미검증이다.
 
 - 후속 확인: 새 C++는 에디터 정식 빌드 성공 후 재시작해 반영했다. 실시간 코드 갱신 뒤 저장 중 종료된 에디터는 직전 저장본으로 복구했으며, 현재 맵은 새 빌드에서 저장·재로딩했다. 약 16초 시뮬레이션에서 양쪽 각각 서로 다른 통나무 액터 4개가 차례로 생성되고 중간에 빈 구간이 생기며 쌓이지 않는 것, 회전판과 막대의 회전각 일치를 확인했다. 높아진 층·계단·경사로·다리·회전판 보행면 11곳과 막대 옆 다리 아래 캡슐 통과를 확인했다. 현재 캡처는 `Saved/Round3Revision/overview.png`·`bridge.png`다. 다인 네트워크·실전 밀침/넘어짐 강도·패키징은 미검증이다.
+
+<a id="round3-dam-theme"></a>
+### 댐 정비장 테마
+
+- 투명 외곽벽 후속 변경(2026-11-11 · Codex 수행 · 미커밋): 현재 `R3A_Arena_Boundary` 네 벽 위에 네이티브 BlockingVolume 38개를 추가했다. 기존 벽 상단과 10cm 겹치며 월드 Z=3000cm까지 막는다. 최대 약 4m 단위이고 인접 구간은 10cm 겹친다. Pawn 채널만 Block, 카메라 등 나머지 채널은 Ignore이며 게임 중 숨김·그림자 비활성이다. Outliner `Round3Dam/InvisibleBoundary`의 `R3D_InvisibleBoundary_*`를 구간별 이동·삭제할 수 있다. 저장·재로딩 후 기존 257개 액터의 위치·크기 보존, 충돌 응답 및 342개 구간 관통 검사 통과를 확인했다. 실제 캐릭터 점프·원격 멀티는 별도 미검증이다. 도구: `Tools/Editor/enclose_round3_invisible.py`.
+
+2026-11-11 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+
+- 적용 맵은 `L_Round3`다. 적용 직전 사용자 배치의 기존 액터 124개 위치·회전·스케일·부착·충돌 활성 상태·Mobility를 재로딩 후 비교해 보존했다. 이동 컴포넌트·GameMode·시작점·공유 Blueprint·캐릭터 코드는 수정하지 않았다. 다른 Round 맵 파일도 초기 적용 전후 해시가 같다.
+- 새 메시 19종과 재질 12종은 `/Game/LD_Gym/LDProps/StaticMeshes/Round3` 및 그 아래 `Materials`에 모았다. 콘크리트 외장, 목재 다리·경사로, 철제 화물 상자, 청록색 플랜지 배관·밸브, 배수구·분수 노즐, 노랑/검정 회전판, 외곽 암벽을 사용한다. 기존 움직이는 메시를 교체할 때 100cm 기준 외접 크기와 액터 변환을 유지하고, 상자·발판은 단순 박스 충돌을 쓴다. 원래 원기둥 회전판은 26-DOP 충돌로 바꿨으므로 정밀 접촉 감각은 실전 확인이 필요하다.
+- 추가 환경은 Outliner `Round3Dam/` 아래의 `R3D_*` 독립 액터다. 장식은 NoCollision이며 배관과 암벽은 주로 외곽에 둔다. 다리 판자·난간과 기믹은 기존 `Round3Layers/`에서 계속 편집한다. 고정 불투명 전용 메시에는 Nanite를 켰고, 물웅덩이와 소형 동적 전용 메시에는 켜지 않았다. 엔진 기본 메시와 기존 공유 재질은 수정하지 않았다.
+- 물웅덩이 8개는 불규칙 평면 메시와 `M_R3D_Water`의 Single Layer Water 셰이딩을 사용한다. 바닥 위 약 1.2cm에서 흡수·산란·시간 기반 잔물결 노멀을 표현하며, 주변 반사용 SphereReflectionCapture를 추가했다. 수영·부력·유체 시뮬레이션이나 미끄러짐 판정은 없다. 기존 주기 분수는 크기·발사 영역·주기를 유지하고 반투명 `M_R3D_JetWater` 재질만 교체했다. Niagara 분사 입자는 추가하지 않았다.
+- 회전 원판 고정 후속 변경(2026-11-11 · Codex 수행 · 미커밋): `R3M_Sweeper`는 메시 없는 회전 부모로 유지하고, 원판 메시·충돌을 새 자식 `R3M_Sweeper_Floor`로 분리했다. 바닥 컴포넌트는 Absolute Rotation/Scale을 사용해 부모 회전의 영향을 받지 않으며 위치 이동만 따라간다. `R3M_Sweeper_Bar`·`R3M_Sweeper_Hub`는 기존 부착을 유지해 초당 30도로 함께 회전한다. 당시 지름 1170cm·막대 길이 1040cm와 높이·재질·충돌 응답은 유지했다. 부모는 NoCollision이고 고정 바닥이 기존 원판 충돌을 담당한다. Round2·공유 Blueprint는 수정하지 않았다. 적용 도구: `Tools/Editor/fix_round3_sweeper_floor.py`.
+- 통나무 밀침 후속 변경(2026-11-11 · Codex 수행 · 미커밋): `R3M_LogSpawner_West/East`만 `Enable Rolling Player Push`를 켜고 `Log Mass`를 35→280kg으로 조정했다. 공유 네이티브 스포너의 새 기능 기본값은 꺼져 있어 Round4 등 다른 맵에는 자동 적용되지 않는다. 서버에서 통나무가 캐릭터 쪽으로 120cm/s 이상 접근해 충돌하면 접촉 직전/현재 속도를 기준으로 수평 밀침을 적용한다. 목표 수평속도는 접근속도×1.15, 최대 650cm/s이며 같은 캐릭터에 0.35초 간격을 둔다. 마찰에 바로 멈추지 않게 수직속도를 최소 100cm/s로 보장하되 이미 더 빠르게 상승 중이면 유지한다. 고속 접촉에서는 진행 방향 속도의 80%까지 감속분을 보정한다. 정지·저속·멀어지는 접촉에는 보정을 하지 않아 플레이어도 통나무를 밀 수 있다. 별도 강제 탈락/넘어짐은 추가하지 않았다. 조절은 스포너 Details의 `Log` 및 `Log > Player Impact`다. 발사·운동량 보정은 서버 전용이며 기존 통나무 물리 이동 복제를 사용한다.
+- 통나무 확인: 임시 PIE 평지에서 네이티브 Character(걷기 속도 275cm/s)를 대상으로 450cm/s 통나무와의 정면 접촉·반대 입력 접촉·정지 통나무 밀기를 검사했다. 접촉 후 캐릭터 수평속도 최대 약 496/515cm/s, 정지 통나무의 보행 밀기 이동을 확인했다. 실제 경사로 전투·닭의 자동 홉/균형·다인 지연 환경 밸런스는 추가 확인이 필요하다. 자료: 로컬 `Saved/Round3LogPush/verified.json`. 적용 도구: `Tools/Editor/configure_round3_log_push.py`.
+- 다리 왕복 장애물 외형 변경(2026-11-11 · Codex 수행 · 미커밋): `R3A_Ball_Proxy`·`R3A_Ball_Proxy2`의 구체를 기존 `SM_R3D_CargoCrate_100`으로 교체하고 이전 노란 재질 오버라이드를 제거했다. 기존 위치·회전·스케일, 3초 PingPong 주기와 두 제어점을 저장·재로딩 후 비교해 보존했다. 외접 크기는 유지하며 충돌 형상은 새 상자의 단순 박스를 사용한다. 공유 Blueprint는 수정하지 않았다. 도구: `Tools/Editor/replace_round3_bridge_weights.py`.
+- 도구는 `Tools/Editor/generate_round3_dam.py` → `apply_round3_dam.py` → `polish_round3_dam.py` 순서다. 적용은 기존 그레이박스에 한 번만 실행하며 중복 적용/전용 재질 덮어쓰기를 차단한다. 원본 백업·조사·확인 결과는 로컬 `Saved/Round3Theme/`에 있다. 도구를 재실행해 사용자 후속 편집을 덮어쓰지 않는다.
+- 확인: 저장·재로딩, 기존 124개 액터 상태 비교, 약 14초 PIE 시뮬레이션에서 다리·회전판·주기 분수의 변화를 확인했다. 별도 PC 멀티·패키징·실전 전투 감각과 통나무 재생성은 이번 테마 적용 후 확인하지 않았다. 전체/탑뷰/물 근접 렌더 캡처를 로컬 `Saved/ConceptCaptures/Round3_Dam_*`에 남겼다.
+
+<a id="round4-amusement-seesaw"></a>
+## Round4 놀이동산 시소 전투장
+
+2026-11-11 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+
+- 새 맵은 `/Game/Map/L_Round4_Amusement`다. 기존 `L_Round4`와 Round1~3는 보존한다. 테스트 GameMode(`BP_CF_KnockdownTestGameMode`)와 네 시작점·미리보기 캐릭터로 바로 확인할 수 있으며, 기존 정식 경기의 무작위 맵 목록·패키징 설정은 변경하지 않았다. 이 새 맵을 정식 경기 Round4로 사용하는 연결은 별도 작업이다.
+- 전투판은 1800×1200cm의 한 장이다. 기본 보행속도 275cm/s 기준 긴 변 약 6.5초·짧은 변 약 4.4초의 이동 거리다. 중앙 회전축 높이는 850cm, 판 중심은 축보다 100cm 위, 수평일 때 판 상면은 975cm다. 축은 판 아래에 있고 좌우 고정 탑승 발판·계단은 판의 회전 범위 바깥에 둔다. 앞쪽의 짧은 U 대기줄→왼쪽 계단→수납식 다리→판→오른쪽 다리·계단→출구 순서이며, 조작실은 미관용이고 버튼 입력은 아직 없다.
+- `Gameplay/AmusementSeesawRig.h/.cpp`와 전용 `Blueprints/BP_R4A_SeesawRig`가 움직임을 소유한다. 서버 시작 시각을 복제하고 각 클라이언트가 GameState의 서버 시간으로 같은 궤적을 계산한다. 무게에 반응하는 물리 시소가 아니라 움직이는 충돌 바닥이다. Details `Seesaw`에서 `Maximum Tilt Angle`(기본 45도), `Timing`의 `Push Interval`(10초), `Initial Delay`(10초), `Tilt Travel Time`(편도 1.75초), `Tilt Hold Time`(2초), `Boarding Travel Time`(0.75초)을 조절한다. 설정한 작동 구간보다 간격이 짧으면 복귀 완료를 보장하도록 실제 간격을 늘린다.
+- 각 시소 작동은 푸셔 접근→기울이기→유지→수평 복귀→푸셔 수납 순서다. 2026-11-12 변경부터 BoardingBridge와 Gate는 게임 시작 때 `Boarding Travel Time`(기본 0.75초) 동안 함께 수납/닫힘 동작을 한 번 재생한 뒤 계속 닫힌다. 출입부는 반복 푸셔 주기와 분리해 수평 복귀 때도 다시 열리지 않는다. 서버 시작 시각을 기준으로 진행도를 계산하며, 시간 보정으로 진행도가 되돌아가도 재개방하지 않는다. 에디터 배치 화면에서는 열린 상태다. 좌우 푸셔는 축에서 X ±480cm이고 선택된 한쪽만 늘어난다. 판 아래 접촉 높이를 기울기에 맞춰 계산한다. 기본 규격에서 45도 시 가장 낮은 판 모서리는 지면보다 약 266cm 위다. 전투판·다리·게이트는 Movable 단순 충돌이고, 푸셔의 움직이는 시각 부품은 NoCollision이다. 캐릭터 이동·균형 코드와 기존 기믹 Blueprint는 수정하지 않는다.
+- 전용 메시·재질·시소 Blueprint와 환경 큐브는 모두 `/Game/LD_Gym/LDProps/StaticMeshes/Round4` 및 `Materials`, `Blueprints`, `Textures` 하위 폴더에 둔다. 고정 메시에는 Nanite를 사용하고, 전투판·푸셔·다리·게이트·바닥 표식·하늘 구체는 사용하지 않는다. 하늘 구체는 NoCollision/Cast Shadow 비활성이다. 플레이어/애니메이션·엔진 글꼴은 기존 공용 에셋을 참조한다.
+- 외곽 난간과 구간별 투명 BlockingVolume 44개는 독립 액터다. 투명벽은 월드 Z=100~3000cm로 난간 상단과 겹치며 Pawn만 막고 카메라·그림자에는 영향을 주지 않는다. Outliner `Round4Amusement/InvisibleBoundary`에서 구간별 편집한다. 배경 대관람차·롤러코스터·타워·매점·화단은 `Background`, 실제 기믹은 `Ride`, 계단·발판은 `Boarding`, 대기줄은 `Queue`에 있다. 대관람차 외 배경 기구는 정적 장식이다. 대관람차 `R4A_FerrisWheel`은 `Gameplay/AmusementFerrisWheel.h/.cpp`와 전용 `Blueprints/BP_R4A_FerrisWheel`로 구동하며, 고정 받침대 `R4A_FerrisSupport`와 회전 링을 분리한다. 탑승칸 16개는 원을 따라 공전하되 수평을 유지한다. Details의 `Ferris Wheel > Rotation Speed` 기본값은 3도/초(한 바퀴 120초)이고 0은 정지, 음수는 역회전이다. 서버 시간 기준 시각 동작이며 회전부·탑승칸은 NoCollision이다. 중심 높이 2350cm로 탑승칸이 바닥에 닿지 않게 했다. 새 메시 2개와 Blueprint도 Round4 폴더 아래에 둔다.
+- 후속 확인(2026-11-12 · Codex 수행 · 미커밋): 사용자 설정 39도·간격 10초와 기존 176개 액터 변환을 보존했다. Development Editor 빌드와 28초 단일 PIE에서 시작 시 출입부 닫힘 애니메이션·닫힘 완료 후 기울기/복귀 전 구간의 다리 수납·게이트 충돌 유지, ±39도 동작, 대관람차 약 3도/초 회전·탑승칸 수평 및 반지름 유지 확인. 외곽/보행면 검사도 통과했다. 원격 멀티는 미검증이다. 최초 회전부 적용 도구 `Tools/Editor/animate_round4_ferris.py`는 이미 적용된 맵에서는 중단한다.
+- 최초 생성 도구는 `Tools/Editor/generate_round4_amusement.py` → `build_round4_amusement.py` → `polish_round4_amusement.py`다. 기존 새 맵/마무리 상태가 있으면 덮어쓰지 않는다. 확인 도구는 `verify_round4_amusement.py`, 실제 렌더 캡처 도구는 `capture_round4_amusement.py`다. 사용자 후속 배치 편집 뒤 최초 생성 도구를 다시 실행하지 않는다.
+- 판 외곽 투명벽(2026-11-12 · Codex 수행 · 미커밋): `BP_R4A_SeesawRig`의 `FightingDeck` 아래에 `DeckBoundary_NegX/PosX/NegY/PosY` Box Collision 4개를 추가했다. 판과 함께 회전하며 판 상면보다 600cm 높은 곳까지 막는다. 두께 40cm, 안쪽 면은 판 끝보다 10cm 안으로 겹치고 모서리·판 두께에도 겹침을 둔다. Movable·Pawn Block·나머지 채널 Ignore이며 카메라와 그림자에는 영향을 주지 않는다. 별도 월드 BlockingVolume 44개와 구분하며, 시소 Blueprint 컴포넌트에서 각 벽의 Transform/Box Extent를 편집한다. 현재 맵의 사용자 편집 194개 액터 변환과 시소 설정 39도·간격 5초·초기 지연 7초를 보존했다. 적용 도구 `Tools/Editor/add_round4_deck_boundaries.py`는 기존 벽이 있으면 중단한다. Blueprint 컴파일·저장/재로딩과 단일 PIE의 수평/±39도에서 네 방향 Pawn 프로필 캡슐 검사 12건을 통과했다. 실제 입력 전투·고속 충돌·원격 멀티는 미검증이다.
+- 임시 부유 발판(2026-11-12 · Codex 수행 · 미커밋): `R4A_FloatingRefuge_1~3`를 `Round4Amusement/FloatingRefuges`에 추가했다. 100×180cm 발판이며 현재 39도 시소의 높은 쪽에서 점프로 진입하도록 상면 높이 1265/1265/1190cm에 둔다. 수평 판에서 바로 올라가는 배치가 아니며, 시소 최대 각도를 높이면 발판과의 여유도 다시 확인해야 한다. Details `Floating Platform > Stand Duration`(기본 3초)이 유일한 인스턴스 동작 옵션이다. 첫 캐릭터가 실제 바닥으로 밟은 순간부터 시간을 세고, 내려가거나 다른 캐릭터가 올라와도 초기화하지 않는다. 마지막 최대 1초 동안 붉어지고 흔들리다가 충돌이 꺼진 채 0.6초 동안 떨어져 사라진다. 6초 뒤 원래 자리로 복구하며, 그 공간에 캐릭터가 있으면 비워질 때까지 기다린다. 서버가 상태/시작 시각/유지 시간을 함께 복제하고 클라이언트는 서버 시간으로 표시한다. `Gameplay/TemporaryFloatingPlatform.h/.cpp`, `BP_R4A_TemporaryFloatingPlatform`, `SM_R4A_TemporaryPlatform_100x180`, `M_R4A_FloatingSurface`를 사용하며 에셋은 모두 Round4 아래에 있다. 최초 적용 도구 `add_round4_floating_platforms.py`는 기존 발판이 있으면 중단한다. 기존 179개 액터 변환과 사용자 39도·간격 5초·초기 지연 7초 설정을 보존했다. Development Editor 빌드와 단일 PIE에서 3초/1.25초 유지 시간, 내려간 뒤에도 카운트 지속, 붕괴 중 충돌 해제·하강, 6초 뒤 복구, 아래 접촉 무반응과 저장 맵의 기본 3초 복원을 확인했다. 원격 멀티·패키징·실제 캐릭터 점프 접근성/4인 밸런스는 미검증이다.
+- 판 표면 정리(2026-11-12 · Codex 수행 · 미커밋): `SM_R4A_FightingDeck_1800x1200`의 상면 줄눈/표시용 얇은 겹면 104개 삼각형을 제거해 224→120개로 줄였다. `M_R4A_Deck` 한 재질에 줄눈·색상 표시를 합치고 로컬 좌표·화면 미분 기반 가장자리 완화로 판의 회전/거리 변화에 대응한다. Roughness 0.92·Specular 0.2·Metallic 0의 무광 표면이다. 기존 단순 충돌 형상·충돌 방식·재질 슬롯·Nanite 설정과 액터 177개 변환, 사용자 설정 39도·간격 5초를 보존했다. 가까운/비스듬한 두 실제 렌더에서 미세 겹면이 사라진 표면을 확인했다. 이번에는 네이티브 동작 코드·사용자의 미저장 레벨을 변경하지 않았으며 별도 PIE는 실행하지 않았다. 적용 도구 `Tools/Editor/polish_round4_deck_surface.py`, 로컬 확인 자료 `Saved/Round4DeckSurface/`.
+- 초기 확인(2026-11-11): Development Editor 빌드와 약 28초 단일 PIE 검사에서 ±45도 도달·약 9.99초 교대·작동 중 연결 다리 수납·복귀 후 재개방을 확인했다. 캐릭터 4명이 수평 판 위에 서고 기울기 초반 판 높이를 따라가는 것도 확인했으며, 이후 최대 경사에서는 미끄러져 아래 지면으로 내려갈 수 있다. 외곽 396개 관통 검사와 계단/발판/판 13개 보행면 검사 통과, 기존 라운드 맵 파일 해시 보존 및 미저장 패키지 없음 확인. 공용 `ABP_Chicken`의 기존 Inertialization 누락 메시지(Idle→AirLoop)는 재현됐고 이 맵 작업에서는 수정하지 않았다. 실제 4인 입력 전투·원격 멀티/지연·패키징은 미검증이다. 실제 캡처는 로컬 `Saved/ConceptCaptures/Round4Amusement/`에 있다.
 
 <a id="round4-finale"></a>
 ## Round4 복합 순환 전투 맵 초안
