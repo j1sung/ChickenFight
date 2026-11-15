@@ -6,6 +6,8 @@
 
 ## 현재 범위
 
+2026-11-15 · Codex 수행 · 미커밋: `CFSessionSubsystem`의 아레나·메뉴 이동과 `CFWaitingRoomWidget`의 직접 메뉴 복귀는 `/Game/Frontend/Lvl_CF_Arena`, `/Game/Frontend/Lvl_CF_MainMenu`를 사용한다. 이전 `/Game/Maps` 폴더 이동 후 남은 문자열 경로를 갱신했다. 새 빌드·실제 LAN 전환 검사는 수행하지 않았다.
+
 `OnlineSubsystemNull` 기반 LAN 방 생성·검색·참가, 직접 IPv4 접속, 참가자 퇴장, 호스트 정상 종료 및 연결 오류 복구를 구현했습니다. 정원은 호스트 포함 4명이며, 최소 시작 인원은 2명입니다. 서버가 직접 정원을 검사하므로 IP로 접속해도 정원을 넘을 수 없습니다.
 
 방을 열면 기존 `Lvl_CF_Arena`에서 대기 UI와 일반 서기·걷기 캐릭터를 사용합니다. 참가자 이름과 호스트 표시는 복제된 PlayerState/GameState로 표시합니다. 2명 이상이면 호스트가 시작할 수 있습니다. Waiting → Countdown → Playing, 전투 캐릭터/입력 전환과 경기 중 나가기를 연결했습니다. 상세 내용은 [경기 시작 문서](../MatchStart.md)를 참고하세요. 탈락 후 제거·고정 관전·4라운드 점수·최종 결과·같은 방 대기 복귀도 연결되어 있습니다. [라운드 진행](../RoundProgression.md), [최종 결과](../FinalResults.md)를 참고하세요. HP·피해량은 후속 범위입니다.

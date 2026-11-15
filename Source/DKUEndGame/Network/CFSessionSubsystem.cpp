@@ -16,8 +16,8 @@ namespace CFSession
 const FName ProjectKey(TEXT("CF_PROJECT"));
 const FName RoomKey(TEXT("CF_ROOM"));
 const FString ProjectValue(TEXT("DKU_ChickenFight_Waiting_v1"));
-const FName Arena(TEXT("/Game/Maps/Lvl_CF_Arena"));
-const FName Menu(TEXT("/Game/Maps/Lvl_CF_MainMenu"));
+const FName Arena(TEXT("/Game/Frontend/Lvl_CF_Arena"));
+const FName Menu(TEXT("/Game/Frontend/Lvl_CF_MainMenu"));
 FText Text(const TCHAR* Value) { return FText::FromString(Value); }
 
 // Accept an IPv4 address or localhost plus an optional port, never travel URL options.

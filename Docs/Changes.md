@@ -1,5 +1,10 @@
 ﻿# 변경 이력
 
+<a id="change-20261115-frontend-path-fix"></a>
+## 2026-11-15 · 폴더 정리 후 시작·복귀 맵 경로 수정
+
+- Codex 수행 · 미커밋. 시작 맵·메뉴 복귀·LAN 아레나 이동을 `/Game/Frontend`로 갱신하고 에디터의 이전 ThirdPerson 경로를 정리했다. 테스트 GameMode의 삭제된 컨트롤러 참조는 기본 `APlayerController`로 대체했다. 코드·설정의 에셋 경로와 네 라운드 맵 파일 존재를 확인했으며 빌드·실행·패키징은 미실행이다. [범위](UI/Overview.md#범위와-흐름) · [LAN 이동](Network/ListenServerSessions.md#현재-범위).
+
 <a id="change-20261115-chickenfight-project-name"></a>
 ## 2026-11-15 · 프로젝트 파일과 표시 이름을 ChickenFight로 변경
 

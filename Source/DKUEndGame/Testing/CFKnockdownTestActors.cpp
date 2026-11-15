@@ -37,9 +37,8 @@ void ACFKnockdownTestHUD::DrawHUD()
 ACFKnockdownTestGameMode::ACFKnockdownTestGameMode()
 {
     static ConstructorHelpers::FClassFinder<APawn> Pawn(TEXT("/Game/Characters/BP_ChickenCharacter"));
-    static ConstructorHelpers::FClassFinder<APlayerController> Controller(TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonPlayerController"));
     if (Pawn.Succeeded()) DefaultPawnClass = Pawn.Class;
-    if (Controller.Succeeded()) PlayerControllerClass = Controller.Class;
+    PlayerControllerClass = APlayerController::StaticClass();
     HUDClass = ACFKnockdownTestHUD::StaticClass();
 }
 

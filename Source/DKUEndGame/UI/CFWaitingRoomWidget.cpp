@@ -142,7 +142,7 @@ void UCFWaitingRoomWidget::HandleLeave()
 {
     if (OnLeaveRequested.IsBound()) { OnLeaveRequested.Broadcast(); return; }
     if (auto* Service=GetGameInstance()->GetSubsystem<UCFSessionSubsystem>()) { Service->LeaveRoom(); return; }
-    if (auto* PC=GetOwningPlayer()) PC->ClientTravel(TEXT("/Game/Maps/Lvl_CF_MainMenu"),TRAVEL_Absolute);
+    if (auto* PC=GetOwningPlayer()) PC->ClientTravel(TEXT("/Game/Frontend/Lvl_CF_MainMenu"),TRAVEL_Absolute);
 }
 
 void UCFWaitingRoomWidget::RefreshSessionState()

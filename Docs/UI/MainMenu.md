@@ -4,7 +4,7 @@
 
 관련 개요: [UI 개요](Overview.md#menu)
 
-`Content/Maps/Lvl_CF_MainMenu`를 열고 Play하면 Figma 기반 타이틀이 표시된다. 배경 액터가 없는 메뉴 전용 맵이므로 편집 뷰포트가 검은 것은 정상이다. Game Default Map도 이 레벨이다.
+`Content/Frontend/Lvl_CF_MainMenu`를 열고 Play하면 Figma 기반 타이틀이 표시된다. 배경 액터가 없는 메뉴 전용 맵이므로 편집 뷰포트가 검은 것은 정상이다. Game Default Map도 이 레벨이다.
 
 ## 타이틀과 진입 흐름
 
