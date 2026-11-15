@@ -1,3 +1,5 @@
+
+
 # CHICKEN FIGHT
 
 > **한 발로 버티고, 상대를 밀어내라!**
@@ -5,11 +7,14 @@
 전통 놀이 닭싸움을 모티브로 한 **4인 온라인 PvP 파티 브롤러**입니다.<br>
 이동과 충전 점프로 상대의 균형을 무너뜨리고, 4라운드 누적 점수로 최종 승자를 결정합니다.
 
-## 시연 영상·스크린샷
+## 시연 영상
 
 <!-- 대표 이미지와 시연 영상 링크를 추가하세요. -->
-*※ 대표 이미지/시연 영상 링크 추가 예정*
+<a href="https://drive.google.com/file/d/1tKShvgaapBr7XYgLBqbtT7CRoU_LJiuE/view?usp=sharing">
+  <img width="640" alt="Chicken Fight 시연 영상 보기" src="https://github.com/user-attachments/assets/c4e6c2dc-64d5-42bb-9f2e-f74150e4c12e" />
+</a>
 
+<!--
 | 스파링 광장 | 도심 옥상 |
 | :---: | :---: |
 | 이미지 추가 예정 | 이미지 추가 예정 |
@@ -17,6 +22,7 @@
 | 댐 정비장 | 놀이동산 |
 | :---: | :---: |
 | 이미지 추가 예정 | 이미지 추가 예정 |
+-->
 
 ## 목차
 
@@ -105,7 +111,7 @@
 
 ```mermaid
 flowchart LR
-    Menu[메인 메뉴] --> Login[Epic 로그인·프로필]
+    Menu[메인 메뉴] --> Login[Epic 로그인·<br/>프로필]
     Login --> Lobby[연습 로비]
     Lobby --> Queue[4인 매칭]
     Queue --> Session[EOS 세션 연결]
@@ -205,13 +211,12 @@ UI는 C++ 위젯과 Widget Blueprint를 함께 사용합니다.
 
 <!-- 사용한 외부 리소스의 출처와 라이선스를 확인해 작성하세요. -->
 
-| 구분 | 리소스 | 출처 | 라이선스 |
+| 구분 | 리소스 | 출처 | 라이선스·비고 |
 | --- | --- | --- | --- |
 | 폰트 | Inter | [Inter](https://rsms.me/inter/) | [라이선스 원문](Content/UI/MainMenu/Fonts/Inter-LICENSE.txt) |
-| 3D 애셋 | 작성 예정 | 작성 예정 | 작성 예정 |
-| 애니메이션 | 작성 예정 | 작성 예정 | 작성 예정 |
-| 음원·효과음 | 작성 예정 | 작성 예정 | 작성 예정 |
-| 플러그인 | 작성 예정 | 작성 예정 | 작성 예정 |
+| 3D 애셋 | 배경·오브젝트 | GPT·Codex를 활용하여 Unreal Engine에서 자체 제작 | 프로젝트 제작 리소스 |
+| 애니메이션 | 캐릭터 동작 | GPT·Codex를 활용하여 Unreal Engine에서 자체 제작 | 프로젝트 제작 리소스 |
+| 음원·효과음 | 배경음·동작 효과음 | GPT·Codex를 활용한 자체 제작 | 프로젝트 제작 리소스 |
 
 <!-- 프로젝트 코드의 라이선스는 팀 합의 후 별도로 명시하세요. -->
 
