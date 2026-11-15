@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-16 · main 문서의 연결 상태와 정리된 경로 대조](Changes.md#change-20261116-docs-current-paths)
+
 - [2026-11-15 · 폴더 정리 후 시작·복귀 맵 경로 수정](Changes.md#change-20261115-frontend-path-fix)
 
 - [2026-11-15 · 프로젝트 파일과 표시 이름을 ChickenFight로 변경](Changes.md#change-20261115-chickenfight-project-name)

@@ -4,7 +4,7 @@
 
 관련 개요: [카테고리 개요](Overview.md)
 
-`Content/Maps/Lvl_CF_Arena`에서 Play하면 경기장이 보이는 대기 UI가 표시됩니다. 별도 대기 맵은 생성하지 않았습니다.
+`Content/Frontend/Lvl_CF_Arena`에서 Play하면 경기장이 보이는 대기 UI가 표시됩니다. 별도 대기 맵은 생성하지 않았습니다.
 
 ## 에셋과 편집 위치
 
@@ -56,6 +56,6 @@
 - 실제 편집기에서 패널·문구·버튼 배치 확인. 이후 별도 프로세스의 실제 LAN 접속으로 두 참가자, 호스트 배지, 이름, 이동 동기화와 퇴장·재접속도 검증했습니다.
 - 수정 후 실제 렌더링으로 정상 크기의 서기, 오른쪽으로 걷기, 멈춤, 메인 메뉴 복귀 화면까지 확인했습니다.
 
-확인 방법: `Content/Maps/Lvl_CF_Arena` 열기 → Play → 게임 화면 클릭 → WASD로 이동 → 키를 놓아 서기 확인 → 나가기. 디자인 수정은 `Content/UI/WaitingRoom/WBP_CF_WaitingRoom`의 Designer에서 진행합니다.
+확인 방법: `Content/Frontend/Lvl_CF_Arena` 열기 → Play → 게임 화면 클릭 → WASD로 이동 → 키를 놓아 서기 확인 → 나가기. 디자인 수정은 `Content/UI/WaitingRoom/WBP_CF_WaitingRoom`의 Designer에서 진행합니다.
 
 방 생성부터 연결 종료까지의 흐름과 멀티플레이 테스트 방법은 [ListenServerSessions.md](../Network/ListenServerSessions.md)를 참고하세요. 경기 시작·닭싸움 자세 전환은 [경기 시작](../MatchStart.md), 4라운드 점수 진행과 최종 결과·대기 복귀는 [라운드 진행](../RoundProgression.md), [최종 결과](../FinalResults.md)를 참고하세요.

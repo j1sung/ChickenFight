@@ -1,5 +1,10 @@
 ﻿# 변경 이력
 
+<a id="change-20261116-docs-current-paths"></a>
+## 2026-11-16 · main 문서의 연결 상태와 정리된 경로 대조
+
+- Codex 수행 · 문서 변경 미커밋 · 요청자 GitHub ID 확인 필요. `eda1be7` 기준으로 EOS 제공자 미연결이라는 과거 설명, Frontend 이동 경로, 삭제한 Draft·애니메이션 테스트 맵 안내를 정리했다. 과거 검증 기록은 보존하고 현재 구현과 구분했다. 전체 카테고리 갱신 기준은 진행하지 않았으며 코드·에셋 변경, 빌드·실행은 수행하지 않았다. [Network](Network/Overview.md) · [UI](UI/Overview.md) · [Gameplay](Gameplay/Overview.md).
+
 <a id="change-20261115-frontend-path-fix"></a>
 ## 2026-11-15 · 폴더 정리 후 시작·복귀 맵 경로 수정
 

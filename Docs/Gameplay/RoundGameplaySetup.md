@@ -31,7 +31,7 @@ Codex 수행 · 미커밋. 사용자 요청으로 `L_Round2`의 World Settings �
 
 ## 책임과 범위
 
-2026-11-09 후속 [다중 맵 경기 코드](MatchPresentationAndTravel.md)는 EOS 배정 문맥에서 네 맵을 무중복 랜덤 순서로 이동하고 걷기 준비를 숨기며 각자 결과 확인 후 연습 로비로 복귀하도록 확장했다. 아래 초기 스폰·같은 프로세스 검증 기록은 선행 결과다. 새 코드의 Editor 빌드·Seamless Travel·색상 에셋 적용은 아직 확인하지 않았다.
+2026-11-09 후속 [다중 맵 경기 코드](MatchPresentationAndTravel.md)는 EOS 배정 문맥에서 네 맵을 무중복 랜덤 순서로 이동하고 걷기 준비를 숨기며 각자 결과 확인 후 연습 로비로 복귀하도록 확장했다. 아래 초기 스폰·같은 프로세스 검증 기록은 선행 결과다. Editor 빌드·색상 에셋 적용과 일부 로컬 검사는 후속 기록에 포함돼 있다. 실제 EOS 4PC의 연속 Seamless Travel 완료와는 구분하며 [검증 기록](MatchPresentationAndTravel.md#검증-기록과-남은-작업)을 따른다.
 
 | 위치 | 역할 |
 |---|---|
@@ -42,7 +42,7 @@ Codex 수행 · 미커밋. 사용자 요청으로 `L_Round2`의 World Settings �
 
 기존 `BP_CF_WaitingCharacter`·`BP_CF_ArenaController`를 참조해 입력·Designer UI를 재사용한다. 기존 LAN 아레나 GameMode는 수정하지 않는다. 초기 Pawn은 ArenaSpawn 네 곳만 선택하고 Controller마다 예약한다. 전투 Pawn 교체·점수·탈락은 기존 코드다.
 
-일반 맵/PIE 검사는 **호스트 수동 시작·같은 월드에서 4라운드 진행**이다. 후속 [EOS Round1 연결 코드](../Network/EOSRound1Session.md)를 추가해 배정 문맥으로 열린 Round1에서는 PUID 명단 검사와 4인 자동 시작을 적용한다. 새 EOS 코드의 Editor 빌드·실계정 실행은 아직 검증하지 않았다. 아래 선행 검증은 각 맵의 초기 생성과 첫 카운트다운까지다. 최종 종료 보고·라운드별 맵 전환·점수의 월드 간 보존은 후속 작업이다.
+일반 맵/PIE 검사는 **호스트 수동 시작·같은 월드에서 4라운드 진행**이다. 후속 [EOS Round1 연결 코드](../Network/EOSRound1Session.md)를 추가해 배정 문맥으로 열린 Round1에서는 PUID 명단 검사와 4인 자동 시작을 적용한다. 선행 EOS 연결은 후속 Editor 빌드와 사용자의 실계정 4인 성공 보고가 있다. 새 다중 맵 경기 전체 검증과는 구분한다. 아래 선행 검증은 각 맵의 초기 생성과 첫 카운트다운까지다. 현재는 최종 종료 보고·라운드별 맵 전환·점수의 월드 간 보존 코드도 구현돼 있으며, 이 단락의 초기 검사는 해당 흐름의 완료 증거가 아니다.
 
 ## 배치 캐릭터 보존과 런타임 정리
 

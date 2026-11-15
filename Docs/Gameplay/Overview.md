@@ -2,6 +2,7 @@
 
 > 전체 문서 갱신: 2026-10-01 (KST) · @j1sung
 > 갱신 기준: 커밋 f7132fa9402b9acd6625877e55b917fc03bdeef7
+> 부분 대조: 2026-11-16 (KST) · Codex 수행 · 요청자 GitHub ID 확인 필요 · `eda1be7`의 관련 코드·설정·추적 파일과 최근 이력 확인. 전체 카테고리 갱신이나 Blueprint 내부·실행 재검증은 아니며, 아래 기존 갱신 기준은 유지한다.
 > 기준 보완 필요: C++와 기존 문서를 대조한 초기 정리. Blueprint 내부·맵 설정은 기존 문서 기반이며 이번 작업에서 에디터로 재확인하지 않음. 관련 에셋 확인 후 완전한 갱신 기준 확정 필요.
 
 ## 범위
@@ -281,7 +282,7 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 - 아래층은 구덩이·복귀 경사로·작은 흔들 발판, 회전판, 왕복 구체/추, 수직 왕복 낙하물과 회피 공간을 유지했다. 기존 장식 통나무와 상시 점프대 2개는 교체했다. 양쪽 통나무는 길이 320cm·지름 90cm·질량 35kg의 물리 원기둥이다. `BP_R3_LogSpawner`가 각 경사로 위에서 하나씩 생성하며, 중심 Z가 65cm 이하로 내려오면 제거하고 2초 후 새 액터를 생성한다. 끼인 통나무도 12초 후 제거한다. 서버에서만 생성·제거하고 생성한 통나무의 물리 이동을 복제한다. 수명·재생성 대기·제거 높이·질량은 스포너의 `Log` 설정으로 조절한다. 구현은 `Source/DKUEndGame/Gameplay/Round3LogSpawner.h/.cpp`다.
 - 다리 아래 회전판: 기존 북동쪽 회전판을 중앙의 `R3M_Sweeper`로 교체했다. 중앙 교전장 위 지름 900cm·상면 높이 140cm의 원판에 길이 800cm·두께 45cm의 막대와 중심축을 붙여 초당 30도(12초에 한 바퀴)로 함께 회전한다. 막대 중심 높이는 210cm이며 개별 부착 액터로 편집한다. 회전 범위에 있던 엄폐물 2개는 북동쪽으로 옮겼다. `RotatingMovementComponent`를 쓰는 충돌 가능한 운동 장애물이며 별도의 넘어짐 판정은 추가하지 않았다.
 - 주기 물줄기 3개: 각 5.2초·6.4초·7.6초 주기로 바닥 아래 600cm에서 오르내린다. 충돌 없는 파란 반투명 기둥이 임시 물 표현이고, 상승한 오버랩 영역에 닿은 캐릭터를 위로 900cm/s 발사한다. `BP_R3_JetLauncher`는 기존 네이티브 `SideScrollingJumpPad`를 상속해 `LaunchCharacter`를 사용한다. 기존 공유 `BP_JumpPad`의 물리 속도 방식은 현재 캐릭터 발사에 적용되지 않아 재사용하지 않았다. 실제 유체·Niagara 효과는 후속 범위다.
-- 편집: 기존은 `Round3Arena/`, 추가분은 `Round3Layers/` 폴더의 독립 액터다. 현재 사용하는 Blueprint 10개(그중 `BP_R3_UpperBridgeMotion`, `BP_R3_JetCycle_0~2`, `BP_R3_JetLauncher`, `BP_R3_Sweeper`, `BP_R3_LogSpawner`)와 하늘 재질 `M_R3_PreviewSky`는 `/Game/LD_Gym/LDProps/StaticMeshes/Round3/`에 있다. 2026-11-15 Codex가 언리얼 콘텐츠 브라우저의 Move Here로 이동하고 `L_Round3` 참조를 갱신했다. 기존 경로는 호환용 리다이렉터를 유지하며, 미사용 초안 BP·재질과 `Round4Draft`의 미사용 BP 2개는 원래 위치에 남긴다. 움직임의 제어점은 Blueprint 컴포넌트 기본값에 저장하고, 자식 액터는 네이티브 루트에 부착해 재로딩 시 변환 초기화를 피한다. 다리 발판은 절대 스케일을 사용한다.
+- 편집: 기존은 `Round3Arena/`, 추가분은 `Round3Layers/` 폴더의 독립 액터다. 현재 사용하는 Blueprint 10개(그중 `BP_R3_UpperBridgeMotion`, `BP_R3_JetCycle_0~2`, `BP_R3_JetLauncher`, `BP_R3_Sweeper`, `BP_R3_LogSpawner`)와 하늘 재질 `M_R3_PreviewSky`는 `/Game/LD_Gym/LDProps/StaticMeshes/Round3/`에 있다. 2026-11-15 Codex가 언리얼 콘텐츠 브라우저의 Move Here로 이동하고 `L_Round3` 참조를 갱신했다. 이동 당시 유지했던 이전 경로 리다이렉터와 미사용 초안은 이후 콘텐츠 정리 커밋 `cf58e7f`에서 제거됐다. 현재 `Content/Map/Round3Draft`·`Round4Draft`는 없으며, 과거 생성 도구의 이전 경로는 현재 맵 재생성 절차로 사용하지 않는다. 움직임의 제어점은 Blueprint 컴포넌트 기본값에 저장하고, 자식 액터는 네이티브 루트에 부착해 재로딩 시 변환 초기화를 피한다. 다리 발판은 절대 스케일을 사용한다.
 - 기존 테스트 GameMode·공유 Blueprint·캐릭터 코드는 유지했다. 네트워크, 승자 판정, 장애물 충돌에 따른 넘어짐 강도는 이번 공간 초안의 검증 범위가 아니다. 캐릭터 충돌 넘어짐 코드는 다른 캐릭터와의 충돌을 대상으로 하므로 일반 물리 통나무 접촉이 같은 넘어짐 판정을 보장하지 않는다.
 - 적용 도구: `Tools/Editor/upgrade_round3_layered_arena.py`는 기존 아레나에 한 번 적용하는 도구이며 `R3L_*`가 있으면 중단한다. 후속 도구 `Tools/Editor/revise_round3_bridge_and_logs.py`는 높이·회전판·통나무 스포너 변경을 한 번 적용하며 `R3M_*`가 있으면 중단한다. 후속 적용 전 사용자 수정 상태는 `Saved/Round3Revision/before_20261108_025308.umap` 및 `before_apply_*.umap`에 백업했다. 초기 적용 전 로컬 백업은 `Saved/Round3Layers/L_Round3_before_layers_20261108_022155.umap`이다. 이전 `rebuild_round3_arena.py`·`build_round3_draft.py`는 과거 배치용으로 현재 맵을 재생성하지 않는다. 과거 코스 백업은 `Saved/Round3Work/L_Round3_race_before_arena.umap`에 보존했다.
 - 초기 확인(높이 450cm였을 때): 저장·재로딩 후 시작점 4곳·다리 발판 12개·분수 부착/주기와 사용자 캐릭터 보존, 주요 보행면 13곳의 충돌, 다리 아래 지름 68cm·높이 176cm 캡슐 통과를 검사했다. 약 9초의 에디터 시뮬레이션에서 다리/분수 왕복, 양쪽 통나무가 경사 아래로 약 6~7m 이동한 것을 기록했다. 테스트 캐릭터는 시뮬레이션에서 무컨트롤러 물리를 활성화해 분수 접촉 후 상향 속도 약 887cm/s와 캡슐 중심 높이 약 558cm까지 상승했다. 이는 입력을 포함한 경기 검증은 아니다. `Saved/Round3Layers/overview.png`·`bridge.png`는 분수의 최고 위치를 임시로 보여준 캡처이며 저장된 초기 위치는 바닥 아래다. 4인 경기·다리 횡단 감각·밸런스·패키징은 미검증이다.
@@ -326,6 +327,8 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 <a id="round4-finale"></a>
 ## Round4 복합 순환 전투 맵 초안
+
+> 과거 제작 기록이다. 현재 `L_Round4`는 위의 놀이동산 시소 맵이며, 아래 복합 순환 맵·`Round4Draft` BP는 현재 실행 대상이 아니다. 콘텐츠 정리 커밋 `cf58e7f` 이후 기존 초안을 직접 열거나 해당 BP를 재사용하는 안내로 읽지 않는다.
 
 > 최근 구성 변경: 2026-11-08 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 

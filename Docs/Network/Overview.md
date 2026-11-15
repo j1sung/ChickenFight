@@ -2,11 +2,12 @@
 
 > 전체 문서 갱신: 2026-10-01 (KST) · @j1sung
 > 갱신 기준: 커밋 f7132fa9402b9acd6625877e55b917fc03bdeef7
+> 부분 대조: 2026-11-16 (KST) · Codex 수행 · 요청자 GitHub ID 확인 필요 · `eda1be7`의 관련 코드·설정·추적 파일과 최근 이력 확인. 전체 카테고리 갱신이나 Blueprint 내부·실행 재검증은 아니며, 아래 기존 갱신 기준은 유지한다.
 > 기준 보완 필요: C++와 기존 문서를 대조한 초기 정리. Blueprint 내부·맵 설정은 기존 문서 기반이며 이번 작업에서 에디터로 재확인하지 않음. 관련 에셋 확인 후 완전한 갱신 기준 확정 필요.
 
 ## 범위와 흐름
 
-이 문서는 LAN 기반 테스트 세션과 인증·연습 로비 진입·매칭 티켓·EOS Round1 연결을 설명한다. 제품 목표인 EOS 자동 4인 배정·세션 연결은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)와 [API 계약](../EOS/unreal-matchmaking-ticket-api.md)을 따른다. EOS Round1 연결 코드의 UE 5.8.4 Editor 빌드와 EOS 자동 검사 2개는 통과했으며 실계정 4인 검증은 아직 수행하지 않았다.
+이 문서는 LAN 기반 테스트 세션과 인증·연습 로비 진입·매칭 티켓·EOS Round1 연결을 설명한다. 구현된 EOS 자동 4인 배정·세션 연결의 계약은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)와 [API 계약](../EOS/unreal-matchmaking-ticket-api.md)을 따른다. EOS Round1 연결 코드의 UE 5.8.4 Editor 빌드와 EOS 자동 검사 2개는 통과했으며 실계정 4인 검증은 아직 수행하지 않았다.
 
 LAN 개발 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 결과 → 최종 결과 → 같은 방 걷기 대기. 퇴장·연결 오류는 메뉴로 복귀한다. 2026-11-04부터 기본 진입은 새 타이틀이며, LAN 검증에는 F9 또는 `-CFLanMenu`를 사용한다. `CFFrontendSubsystem`은 별도 UI 상태 관리자이며 현재 LAN 세션을 EOS로 바꾸지 않는다. [진입 방법](../UI/MainMenu.md#기존-lan-개발-메뉴) 참고.
 `OnlineSubsystemNull`을 사용하는 호스트 포함 최대 4인, 최소 시작 인원 2명의 리슨 서버 구조. Steam/EOS·인터넷 검색·NAT·호스트 이전은 포함하지 않는다.
@@ -47,13 +48,13 @@ LAN 개발 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 
 
 EOSLocal 설정에서만 기본 OSS=EOS 및 UE5.8 EOS P2P NetDriver를 사용한다. 기존 파일은 `Set-EOSLocal.ps1 -Upgrade`로 Secret 출력 없이 갱신한다. 일반 실행의 NULL/LAN 경로는 유지한다. [선행 연결 절차](EOSRound1Session.md).
 
-2026-11-09 후속 코드: `CFMatchRuntimeSubsystem`이 네 실제 맵과 색상을 무중복으로 섞고 서버 Seamless Travel 시 점수·신원을 보존한다. EOS 첫 맵/프로토콜 2를 검증하며 최초 joined/started와 최종 4인 결과 ACK 후 finished를 보고한다. 로컬 결과 화면은 세션 정리 후에도 남고 본인 확인으로 연습 로비를 사용한다. 새 코드의 Unreal 빌드·4PC 검증 및 색상 에셋 적용은 미완료다. [구현·적용·QA 절차](../Gameplay/MatchPresentationAndTravel.md).
+2026-11-09 후속 코드: `CFMatchRuntimeSubsystem`이 네 실제 맵과 색상을 무중복으로 섞고 서버 Seamless Travel 시 점수·신원을 보존한다. EOS 첫 맵/프로토콜 2를 검증하며 최초 joined/started와 최종 4인 결과 ACK 후 finished를 보고한다. 로컬 결과 화면은 세션 정리 후에도 남고 본인 확인으로 연습 로비를 사용한다. 후속 Editor 빌드·자동 검사와 색상 머티리얼 적용 기록이 있으며, 실제 EOS 4PC의 새 다중 맵 전체 흐름은 별도 검증 대상이다. [구현·적용·QA 절차](../Gameplay/MatchPresentationAndTravel.md).
 
 <a id="sessions"></a>
 ## 세션 생성·검색·참가
 > 최근 기능 변경: 2026-09-29 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `d13290b`)
 
-`UCFSessionSubsystem`이 GameInstance 수명 동안 로컬 닉네임과 세션 상태를 관리한다. Idle에서 생성·검색·참가를 시작하며, 콜백·타이머를 정리해 중복 작업을 제한한다. 호스트는 `/Game/Maps/Lvl_CF_Arena`를 listen으로 열고 클라이언트는 검색 결과 또는 IPv4 주소로 연결한다. 닉네임은 최대 24자로 정리하고 실행 중 유지하며 디스크에는 저장하지 않는다.
+`UCFSessionSubsystem`이 GameInstance 수명 동안 로컬 닉네임과 세션 상태를 관리한다. Idle에서 생성·검색·참가를 시작하며, 콜백·타이머를 정리해 중복 작업을 제한한다. 호스트는 `/Game/Frontend/Lvl_CF_Arena`를 listen으로 열고 클라이언트는 검색 결과 또는 IPv4 주소로 연결한다. 닉네임은 최대 24자로 정리하고 실행 중 유지하며 디스크에는 저장하지 않는다.
 
 <a id="closing"></a>
 ## 퇴장과 오류 복구
