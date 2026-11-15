@@ -68,7 +68,7 @@ def _verify(after, before):
 def run(apply=False):
     import unreal
     root = Path(unreal.Paths.project_dir()).resolve()
-    if not (root / "DKUEndGame.uproject").is_file():
+    if not (root / "ChickenFight.uproject").is_file():
         raise RuntimeError("DKUEndGame 프로젝트가 아닙니다.")
     spawns = runpy.run_path(str(root / "Tools/Editor/link_round_spawns.py"))
     level_api = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)

@@ -6,6 +6,8 @@
 
 ## 범위와 흐름
 
+2026-11-15 · Codex 수행 · 미커밋: 프로젝트 파일은 `ChickenFight.uproject`, 프로젝트 이름과 창 표시 제목은 `ChickenFight`로 통일했다. C++ 모듈·빌드 타깃·`/Script/DKUEndGame` 참조와 ProjectID는 유지한다. Editor 빌드 타깃은 계속 `DKUEndGameEditor`를 사용한다. [프로젝트 열기와 이름 범위](../../README.md).
+
 현재 진입 화면은 Figma 기반 타이틀·로그인·닉네임·접속 중 UI다. 인증·프로필·로비 이동 제공자는 [Entry](../Network/LoginEntry.md)에 연결했으며 2026-11-06 사용자가 실계정 로그인부터 로비 입장 성공을 보고했다. 로비의 [자동 매칭 티켓 제공자](../Network/MatchmakingTickets.md)는 코드 연결 후 빌드·실행 검증 전이다. 제품 목표인 자동 4인 매칭은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)를 따른다.
 기존 LAN 방 생성·검색·직접 접속 메뉴는 F9 또는 Development 실행 인자 `-CFLanMenu`로 이용한다. 아레나 대기 UI는 실제 참가자 정보를 표시한다. 로컬 UI 요청 이벤트와 서버의 경기 시작 승인은 별개다.
 

@@ -123,7 +123,7 @@ def run(apply=False):
     _clean(unreal)
     root = Path(unreal.Paths.project_dir()).resolve()
     files = [root / "Content" / "Map" / (path.rsplit("/", 1)[1] + ".umap") for path in MAPS]
-    if not (root / "DKUEndGame.uproject").is_file() or not all(path.is_file() for path in files):
+    if not (root / "ChickenFight.uproject").is_file() or not all(path.is_file() for path in files):
         raise RuntimeError("DKUEndGame 프로젝트와 라운드 맵 4개를 확인하세요.")
     for path in files:
         # 외부 액터 패키지는 .umap 백업만으로 보호할 수 없으므로 이 도구에서 제외한다.

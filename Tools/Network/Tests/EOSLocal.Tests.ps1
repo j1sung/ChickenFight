@@ -42,7 +42,7 @@ $fixture = Join-Path $projectRoot ('.tmp\eos-config-test-' + [Guid]::NewGuid().T
 try {
     New-Item -ItemType Directory -Path (Join-Path $fixture 'Backend-Infra') -Force | Out-Null
     Copy-Item (Join-Path $projectRoot 'Backend-Infra\samconfig.toml') (Join-Path $fixture 'Backend-Infra\samconfig.toml')
-    Copy-Item (Join-Path $projectRoot 'DKUEndGame.uproject') (Join-Path $fixture 'DKUEndGame.uproject')
+    Copy-Item (Join-Path $projectRoot 'ChickenFight.uproject') (Join-Path $fixture 'ChickenFight.uproject')
     [IO.File]::WriteAllText((Join-Path $fixture '.gitignore'), "/Config/Custom/EOSLocal/`n")
     & git -C $fixture init --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Cannot initialize test repository' }

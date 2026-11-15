@@ -134,8 +134,8 @@ function Save-EOSLocalConfig {
 
 function Get-EOSLoginArguments {
     param([Parameter(Mandatory)][string] $ProjectRoot)
-    $project = Join-Path ([IO.Path]::GetFullPath($ProjectRoot)) 'DKUEndGame.uproject'
-    if (-not [IO.File]::Exists($project)) { throw 'DKUEndGame.uproject was not found.' }
+    $project = Join-Path ([IO.Path]::GetFullPath($ProjectRoot)) 'ChickenFight.uproject'
+    if (-not [IO.File]::Exists($project)) { throw 'ChickenFight.uproject was not found.' }
     return @(('"' + $project + '"'), '-game', '-CustomConfig=EOSLocal', '-windowed', '-ResX=1280', '-ResY=720')
 }
 

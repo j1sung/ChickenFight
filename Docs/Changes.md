@@ -1,5 +1,10 @@
 ﻿# 변경 이력
 
+<a id="change-20261115-chickenfight-project-name"></a>
+## 2026-11-15 · 프로젝트 파일과 표시 이름을 ChickenFight로 변경
+
+- Codex 수행 · 미커밋. `ChickenFight.uproject`로 파일명을 변경하고 ProjectName·ProjectDisplayedTitle을 `ChickenFight`로 설정했다. EOS 실행·검사 도구와 맵 설정 도구의 파일 경로를 함께 갱신했다. C++ 모듈·빌드 타깃·BP 네이티브 참조·ProjectID와 EOS 식별자는 보존한다. [적용 범위](UI/Overview.md#범위와-흐름) · [프로젝트 열기](../README.md).
+
 <a id="change-20261115-round3-draft-asset-move"></a>
 ## 2026-11-15 · 사용 중인 Round3 Draft 에셋 경로 통합
 

@@ -54,7 +54,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Network\Set-EOSL
 
 ```powershell
 $ueRoot = 'C:\Program Files\Epic Games\UE_5.8'
-$project = (Resolve-Path .\DKUEndGame.uproject).Path
+$project = (Resolve-Path .\ChickenFight.uproject).Path
 & "$ueRoot\Engine\Build\BatchFiles\Build.bat" DKUEndGameEditor Win64 Development "-Project=$project" -WaitMutex -NoHotReloadFromIDE
 if ($LASTEXITCODE -ne 0) { throw 'Editor 빌드 실패: 먼저 빌드 로그를 확인하세요.' }
 ```

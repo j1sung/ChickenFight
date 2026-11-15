@@ -35,7 +35,7 @@ Steam/EOS, 인터넷 방 검색, 초대, NAT 통과 및 호스트 마이그레�
 
 ## 설정
 
-- `DKUEndGame.uproject`: `OnlineSubsystemNull` 활성화.
+- `ChickenFight.uproject`: `OnlineSubsystemNull` 활성화.
 - `DKUEndGame.Build.cs`: `OnlineSubsystem`, `OnlineSubsystemUtils`, `SlateCore` 의존성 추가.
 - `DefaultEngine.ini`: 기본 온라인 서비스 `NULL`, 초기 연결 제한 15초 / 연결 손실 제한 10초.
 - 세션 관리자: 생성 15초, 검색 10초, 세션 참가 20초, 맵·호스트 연결 25~30초, 세션 정리 5초의 최대 대기 시간.
