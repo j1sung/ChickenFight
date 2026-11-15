@@ -141,27 +141,27 @@ flowchart LR
 주요 폴더를 발췌한 구조입니다.
 
 ```text
-ChickenFight/
-├── ChickenFight.uproject
-├── Config/                 # 프로젝트·입력·온라인 설정
-├── Content/
-│   ├── Frontend/           # 메인메뉴·기존 LAN 아레나 맵
-│   ├── Map/                # 연습 로비·라운드 맵
-│   ├── Characters/         # 캐릭터·애니메이션
-│   ├── Input/              # 입력 액션·매핑
-│   ├── UI/                 # 위젯·폰트·UI 리소스
-│   └── LD_Gym/             # 레벨 에셋·장애물
-├── Source/
-│   └── DKUEndGame/
-│       ├── Character/      # 캐릭터·균형·표시
-│       ├── Gameplay/       # 게임플레이 기믹
-│       ├── Network/        # 인증·매칭·세션·경기 진행
-│       ├── UI/             # UI 동작
-│       ├── Testing/        # 테스트용 액터·게임모드
-│       └── Tests/          # 자동화 테스트
-├── Backend-Infra/          # 백엔드·인프라
-├── Tools/                  # 에디터·네트워크 개발 도구
-└── Docs/                   # 설계·설정·개발 문서
+📂 ChickenFight
+├── 📄 ChickenFight.uproject
+├── 📂 Config                 # 프로젝트·입력·온라인 설정
+├── 📂 Content
+│   ├── 📂 Frontend           # 메인메뉴·기존 LAN 아레나 맵
+│   ├── 📂 Map                # 연습 로비·라운드 맵
+│   ├── 📂 Characters         # 캐릭터·애니메이션
+│   ├── 📂 Input              # 입력 액션·매핑
+│   ├── 📂 UI                 # 위젯·폰트·UI 리소스
+│   └── 📂 LD_Gym             # 레벨 에셋·장애물
+├── 📂 Source
+│   └── 📂 DKUEndGame
+│       ├── 📂 Character      # 캐릭터·균형·표시
+│       ├── 📂 Gameplay       # 게임플레이 기믹
+│       ├── 📂 Network        # 인증·매칭·세션·경기 진행
+│       ├── 📂 UI             # UI 동작
+│       ├── 📂 Testing        # 테스트용 액터·게임모드
+│       └── 📂 Tests          # 자동화 테스트
+├── 📂 Backend-Infra          # 백엔드·인프라
+├── 📂 Tools                  # 에디터·네트워크 개발 도구
+└── 📂 Docs                   # 설계·설정·개발 문서
 ```
 
 ## 주요 클래스 구조
