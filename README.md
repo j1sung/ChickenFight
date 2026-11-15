@@ -201,7 +201,7 @@ flowchart LR
 
     style Work fill:#EAF2FF,stroke:#6195D6,color:#1F2937
     style Test fill:#FFF3DF,stroke:#D9A441,color:#1F2937
-    style Join fill:#64748B,stroke:#64748B
+    style Join fill:none,stroke:none
     style Dev fill:#E7F5EC,stroke:#4F9B6C,color:#1F2937,stroke-width:2px
     style Main fill:#FFE8E2,stroke:#D97962,color:#1F2937,stroke-width:2px
 ```
