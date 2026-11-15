@@ -100,10 +100,10 @@
 
 | 팀원 | 담당 | 주요 기여 | GitHub |
 | --- | --- | --- | --- |
-| 이름 | PM · 기획 · 레벨 디자인 | 게임 규칙, 맵 구성, UX/UI 기획, 일정 관리 | 링크 |
-| 이름 | 클라이언트 | 담당 기능 작성 | 링크 |
-| 이름 | 클라이언트 | 담당 기능 작성 | 링크 |
-| 이름 | 백엔드·네트워크 | 담당 기능 작성 | 링크 |
+| 안지성 | PM · 기획 · 레벨 디자인 | 게임 규칙, 맵 구성, UX/UI 기획, 일정 관리 | [<img src="https://github.com/j1sung.png?size=120" width="100"/>](https://github.com/j1sung) |
+| 김호영 | 클라이언트 · 서버 | 캐릭터 조작·전투 시스템, Unreal 리슨 서버 로직 및 멀티플레이 동기화 | [<img src="https://github.com/sunsi-game.png?size=120" width="100"/>](https://github.com/sunsi-game) |
+| 정규민 | 클라이언트 · 서버 | 캐릭터 조작·전투 시스템, Unreal 리슨 서버 로직 및 멀티플레이 동기화 | [<img src="https://github.com/KyuminChung.png?size=120" width="100"/>](https://github.com/KyuminChung) |
+| 김은재 | 백엔드 · 네트워크 | 외부 인증·프로필·매칭 API, AWS 인프라 구축·배포 및 운영 | [<img src="https://github.com/Developer-EJ.png?size=120" width="100"/>](https://github.com/Developer-EJ) |
 
 ## 아키텍처 설계
 
