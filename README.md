@@ -241,5 +241,5 @@ flowchart LR
 - 📚 [개발 문서 목차](Docs/index.md)
 
 ### 프로젝트 포스터
-
 <!-- 완성된 포스터 이미지를 여기에 추가 -->
+<img width="300" alt="image" src="https://github.com/user-attachments/assets/9cac725e-2a42-4566-8be7-eff76ba9dbef" />
